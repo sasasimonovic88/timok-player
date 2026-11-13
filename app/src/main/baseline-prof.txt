@@ -1,0 +1,13 @@
+# Startup/runtime profile: compiled ahead of time on install (via profileinstaller), so the
+# channel list, player overlay and search run compiled code from the first launch instead of
+# waiting for JIT warm-up. Slow TV boxes benefit most.
+HSPLrs/timok/player/**;->**(**)**
+Lrs/timok/player/**;
+HSPLandroidx/compose/foundation/lazy/**;->**(**)**
+Landroidx/compose/foundation/lazy/**;
+HSPLandroidx/compose/ui/focus/**;->**(**)**
+Landroidx/compose/ui/focus/**;
+HSPLandroidx/tv/material3/**;->**(**)**
+Landroidx/tv/material3/**;
+HSPLcoil3/compose/**;->**(**)**
+Lcoil3/compose/**;

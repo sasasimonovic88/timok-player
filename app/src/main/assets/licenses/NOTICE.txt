@@ -1,0 +1,24 @@
+TIM-OK Player – third-party software
+
+FFmpeg (https://ffmpeg.org), version n6.0.1
+  Used for decoding audio formats (MP2, MP3, AC3, E-AC3, DTS, TrueHD) that the device cannot decode itself.
+  Licensed under the GNU Lesser General Public License version 2.1 or later (see LGPL-2.1.txt).
+  Built without GPL or non-free components. Unmodified source code:
+  https://github.com/FFmpeg/FFmpeg/tree/n6.0.1
+  The FFmpeg code is contained in the separate library libffmpegJNI.so and can be replaced by
+  a rebuilt version.
+
+Licensed under the Apache License, Version 2.0 (see Apache-2.0.txt):
+  AndroidX Media3 / ExoPlayer, including the FFmpeg decoder module – Google
+  Jetpack Compose, Compose for TV and other AndroidX libraries – Google
+  Dagger / Hilt – Google
+  Guava – Google
+  OkHttp, Okio, Retrofit – Square, Inc.
+  Kotlin, kotlinx.coroutines, kotlinx.serialization – JetBrains s.r.o.
+  Compose Multiplatform runtime – JetBrains s.r.o.
+  Coil – Coil Contributors
+  Accompanist – Google
+  javax.inject / jakarta.inject – the JSR-330 Expert Group / Eclipse Foundation
+
+Licensed under the BSD 3-Clause License (see BSD-3-Clause.txt):
+  JSR-305 annotations – JSR305 expert group

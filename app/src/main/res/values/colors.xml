@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TIM-OK Digital placeholder palette; replace with the official brand colors. -->
+    <color name="brand_primary">#FF1565C0</color>
+    <color name="brand_accent">#FFFF8F00</color>
+    <color name="brand_background">#FF0B1220</color>
+    <color name="brand_surface">#FF16213A</color>
+</resources>
