@@ -106,6 +106,7 @@ fun SettingsScreen(
     val tileFocus = remember { Section.entries.associateWith { FocusRequester() } }
     val sectionFocus = remember { FocusRequester() }
     LaunchedEffect(section) {
+        if (section == null) vm.reloadPrefs()
         withFrameNanos { }
         runCatching { if (section == null) tileFocus.getValue(Section.valueOf(lastSectionName)).requestFocus() else sectionFocus.requestFocus() }
     }
@@ -166,7 +167,11 @@ private fun Tiles(vm: SettingsViewModel, focus: Map<Section, FocusRequester>, on
         Section.BACKUP to stringResource(R.string.settings_backup_summary),
         Section.ABOUT to stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
     )
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
+    // Scrolls when a large display size pushes the last row off screen; focus brings tiles into view.
+    Column(
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        modifier = Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()),
+    ) {
         Section.entries.chunked(TILES_PER_ROW).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
                 row.forEach { s ->

@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,8 +60,10 @@ import rs.timok.player.ui.theme.Brand
  * behind the "Licenses" button.
  */
 @Composable
-fun AboutSection(focus: FocusRequester) {
+fun AboutSection(focus: FocusRequester, updateVm: rs.timok.player.ui.update.UpdateViewModel = androidx.hilt.navigation.compose.hiltViewModel()) {
     var showLicenses by remember { mutableStateOf(false) }
+    val updates = updateVm.updates
+    val updateState by updates.state.collectAsStateWithLifecycle()
     // Scrolls if a larger display size pushes the text off screen; the scroll container also lets the
     // initial focus request reach the button the same way as on the other settings pages.
     Row(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(40.dp)) {
@@ -79,7 +82,6 @@ fun AboutSection(focus: FocusRequester) {
                     )
                 }
             }
-            rs.timok.player.ui.update.UpdateRow()
             Body(stringResource(R.string.about_description), Brand.TextPrimary)
             Body(stringResource(R.string.about_disclaimer), Brand.TextPrimary)
             Body(stringResource(R.string.about_privacy), Brand.TextSecondary)
@@ -94,27 +96,58 @@ fun AboutSection(focus: FocusRequester) {
             Text(stringResource(R.string.about_telegram), fontSize = 18.sp, color = Brand.TextPrimary)
             Text(stringResource(R.string.about_telegram_link), fontSize = 16.sp, color = Brand.Accent)
             Spacer(Modifier.size(8.dp))
-            // Tracks focus itself: this is the page's only control and gets focus programmatically on open,
-            // which the stock button does not always show.
-            var buttonFocused by remember { mutableStateOf(false) }
-            TvClickable(
-                onClick = { showLicenses = true },
-                focusedScale = 1.06f,
-                modifier = Modifier.focusRequester(focus).onFocusChanged { buttonFocused = it.isFocused },
-            ) {
-                Text(
-                    stringResource(R.string.about_licenses),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (buttonFocused) Color.Black else Color.White,
-                    modifier = Modifier
-                        .background(if (buttonFocused) Brand.Accent else Brand.Primary, RoundedCornerShape(10.dp))
-                        .padding(horizontal = 32.dp, vertical = 14.dp),
+            // The first button on the page gets focus when it opens: updates (sideload build), else licenses.
+            if (updates.enabled) {
+                AboutButton(
+                    text = stringResource(R.string.update_check),
+                    onClick = { updates.check(userAsked = true) },
+                    modifier = Modifier.focusRequester(focus),
                 )
+                val status = when (updateState) {
+                    rs.timok.player.data.update.UpdateState.Checking -> stringResource(R.string.update_checking)
+                    rs.timok.player.data.update.UpdateState.UpToDate -> stringResource(R.string.update_up_to_date)
+                    else -> null
+                }
+                // Keeps its height while empty, so the licenses button does not jump.
+                Text(status.orEmpty(), fontSize = 14.sp, color = Brand.TextSecondary)
             }
+            AboutButton(
+                text = stringResource(R.string.about_licenses),
+                onClick = { showLicenses = true },
+                modifier = if (updates.enabled) Modifier else Modifier.focusRequester(focus),
+            )
         }
     }
     if (showLicenses) LicensesDialog(onDismiss = { showLicenses = false })
 }
+
+/**
+ * Button of this page. Tracks focus itself: the first one gets focus programmatically when the page opens,
+ * which the stock button does not always show.
+ */
+@Composable
+private fun AboutButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    var focused by remember { mutableStateOf(false) }
+    TvClickable(
+        onClick = onClick,
+        focusedScale = 1.06f,
+        modifier = modifier.onFocusChanged { focused = it.isFocused },
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (focused) Color.Black else Color.White,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier
+                .width(BUTTON_WIDTH)
+                .background(if (focused) Brand.Accent else Brand.Primary, RoundedCornerShape(10.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        )
+    }
+}
+
+/** Both buttons as wide as the QR code above them. */
+private val BUTTON_WIDTH = 220.dp
 
 @Composable
 private fun Body(text: String, color: Color) {

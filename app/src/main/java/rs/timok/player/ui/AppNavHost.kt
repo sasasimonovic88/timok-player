@@ -197,6 +197,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                         instantPlayer = false
                         nav.navigate(Routes.player(group, streamId)) { popUpTo(Routes.CHANNELS) }
                     },
+                    onPlayArchive = { request -> nav.navigate(Routes.vodPlayer(request, 0)) },
                     onBack = { nav.popBackStack() },
                 )
             }

@@ -222,4 +222,12 @@
     <string name="update_check_hint">Stlač OK a skontroluj, či je k dispozícii nová verzia</string>
     <string name="update_checking">Kontrolujem…</string>
     <string name="update_up_to_date">Máš najnovšiu verziu</string>
+
+    <string name="group_recent">Naposledy pozerané</string>
+    <string name="recent_empty">Tu sa zobrazia kanály, ktoré pozeráš.</string>
+    <string name="previous_channel_none">Zatiaľ žiadny predchádzajúci kanál.</string>
+    <string name="subtitles_none">Tento kanál nemá titulky.</string>
+    <string name="subtitles_off">Titulky vypnuté</string>
+    <string name="subtitles_on">Titulky: %1$s</string>
+    <string name="program_not_in_archive">Táto relácia nie je v archíve.</string>
 </resources>

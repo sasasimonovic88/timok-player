@@ -160,6 +160,11 @@ class PlayerViewModel @Inject constructor(
         numberJob?.cancel()
         _numberInput.value = ""
         val number = text.toIntOrNull() ?: return true
+        // Channel numbers never start with 0: a lone 0 goes back to the previous channel.
+        if (number == 0) {
+            previousChannel()
+            return true
+        }
         val pid = playlist.value?.id ?: return true
         viewModelScope.launch {
             val favorite = channelRepo.channels(pid, GroupKey.Favorites).first().getOrNull(number - 1)
@@ -183,6 +188,43 @@ class PlayerViewModel @Inject constructor(
             }
         }
         return true
+    }
+
+    /** Back to the channel watched before this one (0 or the remote's "last channel" key). */
+    fun previousChannel() {
+        val (id, g) = playback.previousChannel ?: run {
+            showMessage(context.getString(R.string.previous_channel_none))
+            return
+        }
+        group.value = g
+        selectChannel(id)
+    }
+
+    /** Yellow key: subtitles on (first track) or off. */
+    fun toggleSubtitles() {
+        val text = tracks.value.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT }
+        when {
+            text.isEmpty() -> showMessage(context.getString(R.string.subtitles_none))
+            text.any { it.selected } -> {
+                disableSubtitles()
+                showMessage(context.getString(R.string.subtitles_off))
+            }
+            else -> {
+                selectTrack(text.first())
+                showMessage(context.getString(R.string.subtitles_on, text.first().label ?: text.first().language ?: ""))
+            }
+        }
+    }
+
+    /** Blue key: next picture format, named on screen. */
+    fun cycleAspectWithMessage() {
+        cycleAspect()
+        val name = when (aspect.value) {
+            rs.timok.player.player.AspectMode.FIT -> R.string.aspect_fit
+            rs.timok.player.player.AspectMode.ZOOM -> R.string.aspect_zoom
+            rs.timok.player.player.AspectMode.STRETCH -> R.string.aspect_stretch
+        }
+        showMessage(context.getString(name))
     }
 
     fun toggleFavorite() {

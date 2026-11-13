@@ -87,7 +87,7 @@ class ChannelsViewModel @Inject constructor(
             _group.value = g
             // Resume the last channel behind the list, like a TV that remembers where it was.
             if (lastStream != null && playback.currentStreamId.value == null && settings.backgroundPlayback.first()) {
-                playback.play(lastStream, g)
+                playback.play(lastStream, if (g == GroupKey.Recent) GroupKey.All else g)
             }
         }
     }
@@ -100,6 +100,8 @@ class ChannelsViewModel @Inject constructor(
         val (streamId, group) = playback.lastPlayed ?: return
         if (_move.value != null) return
         focusTargetId = streamId
+        // "Recently watched" plays in "All channels" (see playGroup) but should stay the shown group.
+        if (_group.value == GroupKey.Recent) return
         if (_group.value != null && _group.value != group) selectGroup(group)
     }
 

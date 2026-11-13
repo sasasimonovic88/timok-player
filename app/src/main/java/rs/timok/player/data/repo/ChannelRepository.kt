@@ -37,12 +37,15 @@ import javax.inject.Singleton
 sealed class GroupKey(val key: String) {
     data object Favorites : GroupKey("fav")
     data object All : GroupKey("all")
+    /** Channels opened most recently, newest first. */
+    data object Recent : GroupKey("recent")
     data class Category(val id: String) : GroupKey("cat:$id")
 
     companion object {
         fun parse(key: String?): GroupKey = when {
             key == null -> All
             key == "fav" -> Favorites
+            key == "recent" -> Recent
             key.startsWith("cat:") -> Category(key.removePrefix("cat:"))
             else -> All
         }
@@ -55,11 +58,18 @@ class ChannelIndex(
     private val byCategory: Map<String, List<ChannelRow>>,
     val favorites: List<ChannelRow>,
 ) {
+    private val byId: Map<Long, ChannelRow> by lazy { (all + favorites).associateBy { it.streamId } }
+
+    /** [GroupKey.Recent] has no fixed rows here; see [recent]. */
     fun rows(group: GroupKey): List<ChannelRow> = when (group) {
         GroupKey.Favorites -> favorites
         GroupKey.All -> all
+        GroupKey.Recent -> emptyList()
         is GroupKey.Category -> byCategory[group.id].orEmpty()
     }
+
+    /** Rows of [ids] in that order, skipping channels that no longer exist. */
+    fun recent(ids: List<Long>): List<ChannelRow> = ids.mapNotNull { byId[it] }
 }
 
 private class EpgSnapshot(val now: Map<String, ProgramBrief>, val next: Map<String, ProgramBrief>)
@@ -70,6 +80,7 @@ class ChannelRepository @Inject constructor(
     private val favoriteDao: FavoriteDao,
     private val programDao: ProgramDao,
     private val playlistDao: PlaylistDao,
+    private val settings: rs.timok.player.data.settings.SettingsStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val indexes = ConcurrentHashMap<Long, Flow<ChannelIndex>>()
@@ -113,7 +124,11 @@ class ChannelRepository @Inject constructor(
         channelDao.observeHidden(playlistId).map { it.toSet() }.distinctUntilChanged()
 
     fun channels(playlistId: Long, group: GroupKey): Flow<List<ChannelRow>> =
-        index(playlistId).map { it.rows(group) }.distinctUntilChanged()
+        if (group == GroupKey.Recent) {
+            combine(index(playlistId), settings.recentChannels(playlistId)) { idx, ids -> idx.recent(ids) }.distinctUntilChanged()
+        } else {
+            index(playlistId).map { it.rows(group) }.distinctUntilChanged()
+        }
 
     /**
      * Shared per playlist and kept warm for a minute after the last screen stops listening,

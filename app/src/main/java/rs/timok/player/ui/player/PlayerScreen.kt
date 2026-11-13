@@ -210,10 +210,15 @@ fun PlayerScreen(
                     in KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9 -> { vm.onDigit(code - KeyEvent.KEYCODE_NUMPAD_0, e.nativeKeyEvent.eventTime); true }
                     KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_DOWN, KeyEvent.KEYCODE_PAGE_DOWN -> { vm.zap(-1); true }
                     KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_UP, KeyEvent.KEYCODE_PAGE_UP -> { vm.zap(1); true }
-                    KeyEvent.KEYCODE_GUIDE -> {
+                    KeyEvent.KEYCODE_GUIDE, KeyEvent.KEYCODE_PROG_GREEN -> {
                         current?.let { onProgram(vm.groupKey, it.streamId) }
                         true
                     }
+                    KeyEvent.KEYCODE_LAST_CHANNEL -> { vm.previousChannel(); true }
+                    // Color keys: red favorite, green guide (above), yellow subtitles, blue picture format.
+                    KeyEvent.KEYCODE_PROG_RED -> { vm.toggleFavorite(); true }
+                    KeyEvent.KEYCODE_PROG_YELLOW, KeyEvent.KEYCODE_CAPTIONS -> { vm.toggleSubtitles(); true }
+                    KeyEvent.KEYCODE_PROG_BLUE -> { vm.cycleAspectWithMessage(); true }
                     KeyEvent.KEYCODE_DPAD_LEFT -> {
                         if (!vm.commitNumber()) {
                             overlayVisible = true

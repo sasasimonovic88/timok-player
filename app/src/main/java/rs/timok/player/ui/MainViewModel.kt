@@ -27,6 +27,7 @@ class MainViewModel @Inject constructor(
     private val channelRepo: ChannelRepository,
     /** Self-update (sideload build); its dialog is shown above every screen. */
     val updates: rs.timok.player.data.update.UpdateManager,
+    private val playback: rs.timok.player.player.PlaybackController,
 ) : ViewModel() {
 
     /** Null while deciding; the splash screen stays up until then. */
@@ -110,6 +111,11 @@ class MainViewModel @Inject constructor(
         if (text.isEmpty()) return false
         clearNumber()
         val number = text.toIntOrNull() ?: return true
+        if (number == 0) {
+            // A lone 0 is the previous channel, as in the player.
+            playback.previousChannel?.let { (id, g) -> _openChannel.tryEmit(StartChannel(g.key, id)) }
+            return true
+        }
         viewModelScope.launch {
             val pid = playlists.activePlaylistNow()?.id ?: return@launch
             val favorite = channelRepo.channels(pid, GroupKey.Favorites).first().getOrNull(number - 1)

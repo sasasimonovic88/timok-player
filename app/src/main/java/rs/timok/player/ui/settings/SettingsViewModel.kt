@@ -157,6 +157,13 @@ class SettingsViewModel @Inject constructor(
         _noGrantScreen.value = !AutoStart.requestOverlayGrant(context)
     }
 
+    /** Re-reads settings another screen may have changed (e.g. a restored backup) when the tiles show again. */
+    fun reloadPrefs() {
+        _autoStart.value = AppPrefs.autoStart(context)
+        _language.value = AppPrefs.language(context)
+        refreshAutoStartGrant()
+    }
+
     /** Re-checked when the screen resumes, e.g. after returning from the system grant screen. */
     fun refreshAutoStartGrant() {
         _autoStartBlocked.value = _autoStart.value && AutoStart.needsOverlayGrant(context)

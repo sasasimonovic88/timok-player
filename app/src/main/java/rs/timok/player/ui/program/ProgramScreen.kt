@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.launch
 import rs.timok.player.R
 import rs.timok.player.data.db.ProgramEntity
 import rs.timok.player.ui.components.Clock
@@ -65,12 +66,16 @@ private val scrim = Brush.horizontalGradient(
 @Composable
 fun ProgramScreen(
     onWatch: (group: String, streamId: Long) -> Unit,
+    onPlayArchive: (rs.timok.player.data.repo.VodPlayRequest) -> Unit,
     onBack: () -> Unit,
     vm: ProgramViewModel = hiltViewModel(),
 ) {
     val channel by vm.channel.collectAsStateWithLifecycle()
     val schedule by vm.schedule.collectAsStateWithLifecycle()
     val now by vm.now.collectAsStateWithLifecycle()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val context = LocalContext.current
+    val notInArchive = stringResource(R.string.program_not_in_archive)
     BackHandler(onBack = onBack)
 
     Row(Modifier.fillMaxSize()) {
@@ -112,7 +117,19 @@ fun ProgramScreen(
                 is ScheduleState.Ready -> if (s.programs.isEmpty()) {
                     Hint(stringResource(R.string.program_empty))
                 } else {
-                    Schedule(s.programs, now) { onWatch(vm.groupKey, vm.streamId) }
+                    val hasArchive = channel?.hasArchive == true
+                    Schedule(s.programs, now, hasArchive) { program ->
+                        // A programme that already ran plays from the archive (channels that have one); else live.
+                        if (hasArchive && program.endMs <= System.currentTimeMillis()) {
+                            scope.launch {
+                                val request = vm.archiveRequest(program)
+                                if (request != null) onPlayArchive(request)
+                                else android.widget.Toast.makeText(context, notInArchive, android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            onWatch(vm.groupKey, vm.streamId)
+                        }
+                    }
                 }
             }
         }
@@ -125,7 +142,7 @@ private sealed interface ScheduleRow {
 }
 
 @Composable
-private fun Schedule(programs: List<ProgramEntity>, now: Long, onClick: () -> Unit) {
+private fun Schedule(programs: List<ProgramEntity>, now: Long, hasArchive: Boolean, onClick: (ProgramEntity) -> Unit) {
     val context = LocalContext.current
     val today = stringResource(R.string.archive_today)
     val tomorrow = stringResource(R.string.program_tomorrow)
@@ -182,7 +199,8 @@ private fun Schedule(programs: List<ProgramEntity>, now: Long, onClick: () -> Un
                     program = row.program,
                     now = now,
                     timeFormat = timeFormat,
-                    onClick = onClick,
+                    archive = hasArchive,
+                    onClick = { onClick(row.program) },
                     modifier = if (i == startIndex) Modifier.focusRequester(startFocus) else Modifier,
                 )
             }
@@ -191,7 +209,7 @@ private fun Schedule(programs: List<ProgramEntity>, now: Long, onClick: () -> Un
 }
 
 @Composable
-private fun ProgramRow(program: ProgramEntity, now: Long, timeFormat: DateFormat, onClick: () -> Unit, modifier: Modifier) {
+private fun ProgramRow(program: ProgramEntity, now: Long, timeFormat: DateFormat, archive: Boolean, onClick: () -> Unit, modifier: Modifier) {
     var focused by remember { mutableStateOf(false) }
     val isNow = program.startMs <= now && program.endMs > now
     val isPast = program.endMs <= now
@@ -220,6 +238,10 @@ private fun ProgramRow(program: ProgramEntity, now: Long, timeFormat: DateFormat
                                 .background(Brand.Accent, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 6.dp, vertical = 1.dp),
                         )
+                    }
+                    if (isPast && archive) {
+                        // Marks programmes that can be watched from the archive.
+                        Text("⟲ ", fontSize = 17.sp, color = Brand.Accent)
                     }
                     Text(
                         program.title,

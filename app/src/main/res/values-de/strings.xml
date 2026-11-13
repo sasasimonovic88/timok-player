@@ -222,4 +222,12 @@
     <string name="update_check_hint">OK drücken, um nach einer neuen Version zu suchen</string>
     <string name="update_checking">Suche…</string>
     <string name="update_up_to_date">Du hast die neueste Version</string>
+
+    <string name="group_recent">Zuletzt gesehen</string>
+    <string name="recent_empty">Hier erscheinen die Sender, die du ansiehst.</string>
+    <string name="previous_channel_none">Noch kein vorheriger Sender.</string>
+    <string name="subtitles_none">Dieser Sender hat keine Untertitel.</string>
+    <string name="subtitles_off">Untertitel aus</string>
+    <string name="subtitles_on">Untertitel: %1$s</string>
+    <string name="program_not_in_archive">Diese Sendung ist nicht im Archiv.</string>
 </resources>

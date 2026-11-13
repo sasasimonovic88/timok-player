@@ -68,4 +68,21 @@ class SettingsStore @Inject constructor(@ApplicationContext private val context:
     }
 
     suspend fun setLastGroup(group: String) = context.dataStore.edit { it[lastGroupKey] = group }
+
+    private fun recentKey(playlistId: Long) = stringPreferencesKey("recent_channels_$playlistId")
+
+    /** Channels last opened on this account, newest first (at most [RECENT_MAX]). */
+    fun recentChannels(playlistId: Long): Flow<List<Long>> = context.dataStore.data.map { p ->
+        p[recentKey(playlistId)].orEmpty().split(',').mapNotNull { it.toLongOrNull() }
+    }
+
+    suspend fun addRecentChannel(playlistId: Long, streamId: Long) = context.dataStore.edit { p ->
+        val key = recentKey(playlistId)
+        val list = p[key].orEmpty().split(',').mapNotNull { it.toLongOrNull() }
+        p[key] = (listOf(streamId) + list.filter { it != streamId }).take(RECENT_MAX).joinToString(",")
+    }
+
+    private companion object {
+        const val RECENT_MAX = 10
+    }
 }

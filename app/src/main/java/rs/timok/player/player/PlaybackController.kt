@@ -114,6 +114,11 @@ class PlaybackController @Inject constructor(
     var lastPlayed: Pair<Long, GroupKey>? = null
         private set
 
+    /** Channel that was actually open before the current one (quick zaps in between do not count). */
+    var previousChannel: Pair<Long, GroupKey>? = null
+        private set
+    private var lastOpened: Pair<Long, GroupKey>? = null
+
     /** Starts [streamId]; with [immediate] false, waits briefly so fast zapping opens only the last channel. */
     fun play(streamId: Long, group: GroupKey, immediate: Boolean = true) {
         _currentStreamId.value = streamId
@@ -133,7 +138,10 @@ class PlaybackController @Inject constructor(
                 )
             )
             playingId = streamId
+            lastOpened?.let { if (it.first != streamId) previousChannel = it }
+            lastOpened = streamId to group
             settings.setLastWatched(streamId, group.key)
+            settings.addRecentChannel(playlist.id, streamId)
         }
     }
 

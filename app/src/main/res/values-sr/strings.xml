@@ -222,4 +222,12 @@
     <string name="update_check_hint">Pritisni OK da proveriš da li postoji nova verzija</string>
     <string name="update_checking">Proveravam…</string>
     <string name="update_up_to_date">Imaš najnoviju verziju</string>
+
+    <string name="group_recent">Poslednje gledano</string>
+    <string name="recent_empty">Ovde će se pojaviti kanali koje gledaš.</string>
+    <string name="previous_channel_none">Još nema prethodnog kanala.</string>
+    <string name="subtitles_none">Ovaj kanal nema titlove.</string>
+    <string name="subtitles_off">Titl isključen</string>
+    <string name="subtitles_on">Titl: %1$s</string>
+    <string name="program_not_in_archive">Ova emisija nije u arhivi.</string>
 </resources>

@@ -154,9 +154,11 @@ fun ChannelsScreen(
 
     val favoritesTitle = stringResource(R.string.group_favorites)
     val allTitle = stringResource(R.string.group_all)
-    val groupItems = remember(categories, favoritesTitle, allTitle) {
+    val recentTitle = stringResource(R.string.group_recent)
+    val groupItems = remember(categories, favoritesTitle, allTitle, recentTitle) {
         buildList {
             add(GroupItem(GroupKey.Favorites, favoritesTitle))
+            add(GroupItem(GroupKey.Recent, recentTitle))
             add(GroupItem(GroupKey.All, allTitle))
             categories.forEach { add(GroupItem(GroupKey.Category(it.categoryId), it.name)) }
         }
@@ -230,7 +232,13 @@ fun ChannelsScreen(
                     )
                     playlist == null -> Unit
                     list.isEmpty() -> Text(
-                        stringResource(if (group == GroupKey.Favorites) R.string.favorites_empty else R.string.no_channels_in_group),
+                        stringResource(
+                            when (group) {
+                                GroupKey.Favorites -> R.string.favorites_empty
+                                GroupKey.Recent -> R.string.recent_empty
+                                else -> R.string.no_channels_in_group
+                            }
+                        ),
                         color = Brand.TextSecondary,
                         modifier = Modifier.padding(top = 24.dp),
                     )
@@ -249,10 +257,10 @@ fun ChannelsScreen(
                                 if (!found) runCatching { groupFocus.requestFocus() }
                             },
                             onFocused = { vm.focusTargetId = it },
-                            onProgram = { row -> onProgram(group?.key ?: GroupKey.All.key, row.streamId) },
+                            onProgram = { row -> onProgram(playGroup(group), row.streamId) },
                             onClick = { row ->
                                 scope.launch {
-                                    if (vm.onChannelClick(row)) onPlay(group?.key ?: GroupKey.All.key, row.streamId)
+                                    if (vm.onChannelClick(row)) onPlay(playGroup(group), row.streamId)
                                 }
                             },
                             onLongClick = vm::onLongPress,
@@ -405,6 +413,15 @@ private fun ChannelList(
             }
         }
     }
+}
+
+/**
+ * Group the player zaps in. "Recently watched" reorders itself with every channel opened, so up/down there would
+ * jump around; such channels play in "All channels" instead.
+ */
+private fun playGroup(group: GroupKey?): String = when (group) {
+    null, GroupKey.Recent -> GroupKey.All.key
+    else -> group.key
 }
 
 @Composable

@@ -227,4 +227,12 @@
     <string name="update_check_hint">Press OK to check for a new version</string>
     <string name="update_checking">Checking…</string>
     <string name="update_up_to_date">You have the latest version</string>
+
+    <string name="group_recent">Recently watched</string>
+    <string name="recent_empty">Channels you watch will appear here.</string>
+    <string name="previous_channel_none">No previous channel yet.</string>
+    <string name="subtitles_none">This channel has no subtitles.</string>
+    <string name="subtitles_off">Subtitles off</string>
+    <string name="subtitles_on">Subtitles: %1$s</string>
+    <string name="program_not_in_archive">This programme is not in the archive.</string>
 </resources>
