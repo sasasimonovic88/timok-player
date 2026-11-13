@@ -79,6 +79,7 @@ fun AboutSection(focus: FocusRequester) {
                     )
                 }
             }
+            rs.timok.player.ui.update.UpdateRow()
             Body(stringResource(R.string.about_description), Brand.TextPrimary)
             Body(stringResource(R.string.about_disclaimer), Brand.TextPrimary)
             Body(stringResource(R.string.about_privacy), Brand.TextSecondary)

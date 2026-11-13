@@ -184,4 +184,42 @@
     <string name="external_player_open">Spoljni plejer</string>
     <string name="external_player_choose">Otvori pomoću</string>
     <string name="external_player_none">Nije pronađena aplikacija koja može da pusti ovaj video.</string>
+
+    <string name="settings_backup">Rezervna kopija</string>
+    <string name="settings_backup_summary">Favoriti i podešavanja</string>
+    <string name="backup_save">Sačuvaj rezervnu kopiju</string>
+    <string name="backup_save_hint">Favoriti, Moja lista, nastavi gledanje i podešavanja, u fajl (npr. u Download ili na USB)</string>
+    <string name="backup_restore">Vrati iz rezervne kopije</string>
+    <string name="backup_restore_hint">Izaberi fajl rezervne kopije; trenutni favoriti se zamenjuju</string>
+    <string name="backup_note">Korisničko ime i lozinka se ne čuvaju u rezervnoj kopiji: prvo se prijavi, pa vrati kopiju.</string>
+    <string name="backup_saved">Rezervna kopija je sačuvana (%1$d favorita).</string>
+    <string name="backup_restored">Vraćeno: %1$d favorita, %2$d u Mojoj listi, %3$d u nastavi gledanje.</string>
+    <string name="backup_missing">%1$d omiljenih kanala više ne postoji na serveru.</string>
+    <string name="backup_confirm_title">Vratiti ovu rezervnu kopiju?</string>
+    <string name="backup_confirm_message">Sačuvano %1$s · %2$d favorita · %3$d u Mojoj listi. Trenutni favoriti i podešavanja biće zamenjeni.</string>
+    <string name="backup_confirm">Vrati</string>
+    <string name="backup_error_no_account">Prvo se prijavi na nalog.</string>
+    <string name="backup_error_invalid">Ovaj fajl nije rezervna kopija TIM-OK Playera.</string>
+    <string name="backup_error_newer">Ovu kopiju je napravila novija verzija aplikacije. Prvo ažuriraj aplikaciju.</string>
+    <string name="backup_error_io">Fajl nije moguće pročitati ili sačuvati.</string>
+    <string name="backup_no_picker">Ovaj uređaj nema izbor fajlova.</string>
+
+    <string name="update_available">Nova verzija %1$s</string>
+    <string name="update_current">Instalirano: %1$s</string>
+    <string name="update_install">Instaliraj</string>
+    <string name="update_later">Kasnije</string>
+    <string name="update_cancel">Otkaži</string>
+    <string name="update_downloading">Preuzimanje verzije %1$s…</string>
+    <string name="update_permission_title">Dozvoli instaliranje ažuriranja</string>
+    <string name="update_permission_body">Android traži dozvolu da TIM-OK Player instalira aplikacije. Dozvoli na ekranu koji se otvorio (ili u Podešavanjima uređaja → Bezbednost / Aplikacije → Poseban pristup → Instaliranje nepoznatih aplikacija), pa se vrati.</string>
+    <string name="update_retry">Pokušaj ponovo</string>
+    <string name="update_failed_title">Ažuriranje nije uspelo</string>
+    <string name="update_failed_network">Ažuriranje nije moglo da se preuzme. Proveri vezu i pokušaj kasnije.</string>
+    <string name="update_failed_checksum">Preuzeti fajl je oštećen i nije instaliran. Pokušaj kasnije.</string>
+    <string name="update_failed_installer">Ovaj uređaj nema instaler aplikacija za ažuriranje.</string>
+    <string name="update_ok">U redu</string>
+    <string name="update_check">Proveri ažuriranja</string>
+    <string name="update_check_hint">Pritisni OK da proveriš da li postoji nova verzija</string>
+    <string name="update_checking">Proveravam…</string>
+    <string name="update_up_to_date">Imaš najnoviju verziju</string>
 </resources>

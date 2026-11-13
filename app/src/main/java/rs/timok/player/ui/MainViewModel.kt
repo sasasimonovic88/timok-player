@@ -25,6 +25,8 @@ class MainViewModel @Inject constructor(
     private val playlists: PlaylistRepository,
     private val settings: SettingsStore,
     private val channelRepo: ChannelRepository,
+    /** Self-update (sideload build); its dialog is shown above every screen. */
+    val updates: rs.timok.player.data.update.UpdateManager,
 ) : ViewModel() {
 
     /** Null while deciding; the splash screen stays up until then. */
@@ -50,6 +52,7 @@ class MainViewModel @Inject constructor(
     /** Every return to the screen (also after the box wakes up), not only a fresh start. */
     fun onForeground() {
         viewModelScope.launch { playlists.refreshIfStale() }
+        updates.checkIfDue()
     }
 
     fun consumeStartChannel() {

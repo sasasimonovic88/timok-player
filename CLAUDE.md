@@ -135,9 +135,17 @@ Oznake: **M** = MVP, **F2** = druga faza, **O** = opciono/kasnije.
 
 Faza 1 je završena, a veći deo Faze 2 i deo Faze 3 takođe. Trenutno stanje i sledeći koraci su ispod.
 
-## Trenutno stanje (ažurirano 2026-11-13)
+## Trenutno stanje (ažurirano 2026-11-14)
 
-**Poslednja verzija: 0.4.9 (versionCode 13)**, `sideloadRelease`, potpisana release ključem (`CN=TIM-OK Digital`, podaci za potpis u `local.properties`). APK: `app/build/outputs/apk/sideload/release/TIMOK-Player-0.4.9.apk`. Za testiranje na sopstvenom boxu koristi se `assembleSideloadStaging` (release brzina, debug ključ, ne distribuira se). Release i staging imaju različit potpis, pa se ne mogu instalirati jedan preko drugog bez brisanja podataka. Kod je na GitHub-u: javni repozitorijum `sasasimonovic88/timok-player` (grana `main`); `local.properties` i `signing/` se nikad ne komituju. Sistemska Java na Macu je 8, pa za `./gradlew` treba `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`.
+**Poslednja verzija: 0.5.0 (versionCode 14)**, `sideloadRelease`, potpisana release ključem (`CN=TIM-OK Digital`, podaci za potpis u `local.properties`). APK: `app/build/outputs/apk/sideload/release/TIMOK-Player-0.5.0.apk`. Za testiranje na sopstvenom boxu koristi se `assembleSideloadStaging` (release brzina, debug ključ, ne distribuira se). Release i staging imaju različit potpis, pa se ne mogu instalirati jedan preko drugog bez brisanja podataka. Kod je na GitHub-u: javni repozitorijum `sasasimonovic88/timok-player` (grana `main`); `local.properties` i `signing/` se nikad ne komituju. Sistemska Java na Macu je 8, pa za `./gradlew` treba `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`.
+
+### Objava nove verzije (sideload, samo-ažuriranje preko GitHub Releases)
+
+1. Podigni `versionCode`/`versionName` u `app/build.gradle.kts`, napiši `release-notes/<verzija>.md` (srpski, kratke stavke).
+2. `./gradlew assembleSideloadRelease`, kopiraj `app-sideload-release.apk` u `TIMOK-Player-<verzija>.apk`.
+3. `scripts/make-update-json.sh release-notes/<verzija>.md` → `update.json` (versionCode, apkUrl, sha256, changelog).
+4. Komituj, pa iz korisnikovog terminala (sandbox nema pristup GitHub-u): `git push` i `gh release create v<verzija> <apk> <update.json> --title ... --notes-file release-notes/<verzija>.md`.
+Aplikacija čita `timok.updateUrl` = `.../releases/latest/download/update.json` (stalni link na poslednji release), proverava jednom dnevno pri pokretanju i na zahtev (O aplikaciji → Proveri ažuriranja), preuzima APK, proverava SHA-256 i otvara sistemski instaler. Release i staging imaju različit ključ: ažuriranje radi samo na release instalacijama.
 
 ### Urađeno
 
@@ -151,6 +159,8 @@ Faza 1 je završena, a veći deo Faze 2 i deo Faze 3 takođe. Trenutno stanje i 
 - **EPG:** XMLTV sa servera ili ručni linkovi; ugrađeni epgshare01 vodiči (≈70 zemalja + servisi) popunjavaju kanale bez programa; uparivanje po ID-ju i po nazivu, uz proveru zemlje (EXYU/EN/DACH grupe), da kanali ne dobiju program na pogrešnom jeziku.
 - **VOD:** filmovi i serije, „Nastavi gledanje“, detalji, nastavak od mesta prekida, sledeća epizoda. Sortiranje kroz listu opcija: redosled servera, najnovije dodato, ocena, godina (iz naziva), naziv A–Z. **„Moja lista“** (0.4.7): dugme „+ Moja lista“ / „✓ Moja lista“ na detaljima filma i serije, kategorija „Moja lista“ ispod „Nastavi gledanje“ (najnovije dodato prvo, bez sortiranja, vidi se samo kada nije prazna). Naslov ostaje dok ga korisnik ne ukloni, kao na Netflixu. Tabela `watchlist` (Room v5, AutoMigration 4→5). Testirano na Hisense TV-u. Na Filmovima/Serijama se umesto uživo kanala prikazuje mirna pozadina sa logom (kanal se zaustavlja i vraća na TV ekranima).
 - **Program kanala** (`ui/program/`): ceo sačuvani program jednog kanala (3 h unazad, ~3 dana unapred) po danima, fokus na trenutnoj emisiji („Sada“ + napredak), fokusirana emisija prikazuje ceo opis, OK pušta kanal. Otvara se tasterom GUIDE u plejeru, stavkom „Program kanala“ u meniju opcija i strelicom desno na kanalu u listi. Provereno na boxu preko GUIDE; mreža (vodič kanali × vreme) još nije urađena.
+- **Rezervna kopija** (Podešavanja → Rezervna kopija, `data/backup/`): JSON fajl preko sistemskog izbora fajlova (SAF) sa favoritima (redosled + naziv), sakrivenim kategorijama, Mojom listom, nastavi gledanje i podešavanjima; bez korisničkog imena i lozinke. Vraćanje traži kanal po ID-ju pa po nazivu. Izvoz proveren na boxu.
+- **Samo-ažuriranje** (sideload, `data/update/UpdateManager.kt`, `ui/update/`): vidi „Objava nove verzije“. `REQUEST_INSTALL_PACKAGES` i FileProvider samo u `src/sideload/AndroidManifest.xml`.
 - **Catch-up:** ekran arhive za kanale sa `tv_archive`. Kod trenutnog provajdera timeshift URL-ovi vraćaju 404, i u drugim plejerima.
 - **Pretraga:** kanali, filmovi i serije u tri kartice sa brojem rezultata; vraćanje fokusa posle Back.
 - **Interfejs:** jezici srpski, engleski, nemački, slovački; veličina prikaza 70–100%; automatsko pokretanje; ekran „O aplikaciji“ (verzija iz `BuildConfig`, napomena da je aplikacija samo plejer, Telegram QR `t.me/TimOKDigital`, FFmpeg/LGPL napomena, licence iza dugmeta, tekstovi u `assets/licenses/`).
@@ -169,6 +179,6 @@ Faza 1 je završena, a veći deo Faze 2 i deo Faze 3 takođe. Trenutno stanje i 
 
 1. **TCL 4K TV:** sačekati povratnu informaciju da li „Kompatibilni prikaz videa“ uklanja tragove menija. Ako uklanja, razmotriti automatsko uključivanje na tom modelu.
 2. **Ostatak Faze 2:** prethodni kanal, „poslednje gledano“ za kanale, EPG mreža (vodič), više profila/playlisti, podešavanja dekodera i bafera, prečice na daljinskom (boje, CH+/CH−).
-3. **Provera ažuriranja za sideload:** `UPDATE_URL` već postoji u `BuildConfig`, ali se ne koristi (JSON sa `versionCode`, `apkUrl`, `changelog`).
+3. **Prebaciti test box na release:** izvoz kopije → deinstalirati staging → instalirati release 0.5.0 → korisnik se prijavi → vratiti kopiju. Posle toga proveriti ažuriranje kada izađe sledeća verzija.
 4. **Sitno:** standardno `TvButton` dugme ponekad ne prikazuje fokus kada ga dobije programski pri otvaranju ekrana (zaobiđeno samo na „O aplikaciji“); spoljni plejer za pojedinačnu epizodu (dugo OK).
-5. **Faza 3 (opciono):** PIN/roditeljska kontrola, backup/restore, M3U izvor, pauza uživo (timeshift).
+5. **Faza 3 (opciono):** PIN/roditeljska kontrola, M3U izvor, pauza uživo (timeshift).

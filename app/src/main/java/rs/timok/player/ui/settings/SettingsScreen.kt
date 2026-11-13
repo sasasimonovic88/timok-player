@@ -83,6 +83,7 @@ private enum class Section(@StringRes val title: Int, @DrawableRes val icon: Int
     PLAYBACK(R.string.settings_playback, R.drawable.ic_set_playback),
     INTERFACE(R.string.settings_interface, R.drawable.ic_set_display),
     AUTOSTART(R.string.settings_autostart, R.drawable.ic_set_power),
+    BACKUP(R.string.settings_backup, R.drawable.ic_set_backup),
     ABOUT(R.string.settings_about, R.drawable.ic_set_about),
 }
 
@@ -141,6 +142,7 @@ fun SettingsScreen(
             Section.PLAYBACK -> PlaybackSection(vm, sectionFocus)
             Section.INTERFACE -> InterfaceSection(vm, sectionFocus)
             Section.AUTOSTART -> AutoStartSection(vm, sectionFocus)
+            Section.BACKUP -> BackupSection(sectionFocus)
             Section.ABOUT -> AboutSection(sectionFocus)
         }
     }
@@ -161,10 +163,11 @@ private fun Tiles(vm: SettingsViewModel, focus: Map<Section, FocusRequester>, on
         Section.PLAYBACK to stringResource(R.string.settings_playback_summary),
         Section.INTERFACE to "${languageLabel(language)} · ${percent(uiScale)}",
         Section.AUTOSTART to stringResource(if (autoStart) R.string.state_on else R.string.state_off),
+        Section.BACKUP to stringResource(R.string.settings_backup_summary),
         Section.ABOUT to stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
     )
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
-        Section.entries.chunked(3).forEach { row ->
+        Section.entries.chunked(TILES_PER_ROW).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
                 row.forEach { s ->
                     Tile(
@@ -175,10 +178,14 @@ private fun Tiles(vm: SettingsViewModel, focus: Map<Section, FocusRequester>, on
                         modifier = Modifier.weight(1f).focusRequester(focus.getValue(s)),
                     )
                 }
+                // Keep tiles of a short last row as wide as the others.
+                repeat(TILES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
 }
+
+private const val TILES_PER_ROW = 3
 
 /** Same corners as the focus outline of [rs.timok.player.ui.components.TvClickable]. */
 private val tileShape = RoundedCornerShape(8.dp)
@@ -496,7 +503,7 @@ private fun EpgPresetsDialog(selected: Set<String>, labels: Map<String, String>,
 }
 
 @Composable
-private fun SettingRow(
+internal fun SettingRow(
     title: String,
     value: String,
     valueActive: Boolean,

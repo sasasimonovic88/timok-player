@@ -184,4 +184,42 @@
     <string name="external_player_open">Externý prehrávač</string>
     <string name="external_player_choose">Otvoriť pomocou</string>
     <string name="external_player_none">Nenašla sa aplikácia, ktorá dokáže prehrať toto video.</string>
+
+    <string name="settings_backup">Záloha</string>
+    <string name="settings_backup_summary">Obľúbené a nastavenia</string>
+    <string name="backup_save">Uložiť zálohu</string>
+    <string name="backup_save_hint">Obľúbené, Môj zoznam, pokračovať v sledovaní a nastavenia do súboru (napr. Download alebo USB)</string>
+    <string name="backup_restore">Obnoviť zo zálohy</string>
+    <string name="backup_restore_hint">Vyber súbor zálohy; aktuálne obľúbené sa nahradia</string>
+    <string name="backup_note">Používateľské meno a heslo sa do zálohy neukladajú: najprv sa prihlás, potom obnov.</string>
+    <string name="backup_saved">Záloha uložená (%1$d obľúbených).</string>
+    <string name="backup_restored">Obnovené: %1$d obľúbených, %2$d v Mojom zozname, %3$d v pokračovať v sledovaní.</string>
+    <string name="backup_missing">%1$d obľúbených kanálov už na serveri neexistuje.</string>
+    <string name="backup_confirm_title">Obnoviť túto zálohu?</string>
+    <string name="backup_confirm_message">Uložené %1$s · %2$d obľúbených · %3$d v Mojom zozname. Aktuálne obľúbené a nastavenia sa nahradia.</string>
+    <string name="backup_confirm">Obnoviť</string>
+    <string name="backup_error_no_account">Najprv sa prihlás do účtu.</string>
+    <string name="backup_error_invalid">Tento súbor nie je záloha TIM-OK Player.</string>
+    <string name="backup_error_newer">Túto zálohu vytvorila novšia verzia aplikácie. Najprv aplikáciu aktualizuj.</string>
+    <string name="backup_error_io">Súbor sa nepodarilo prečítať ani uložiť.</string>
+    <string name="backup_no_picker">Toto zariadenie nemá výber súborov.</string>
+
+    <string name="update_available">Nová verzia %1$s</string>
+    <string name="update_current">Nainštalované: %1$s</string>
+    <string name="update_install">Inštalovať</string>
+    <string name="update_later">Neskôr</string>
+    <string name="update_cancel">Zrušiť</string>
+    <string name="update_downloading">Sťahuje sa verzia %1$s…</string>
+    <string name="update_permission_title">Povoľ inštaláciu aktualizácie</string>
+    <string name="update_permission_body">Android potrebuje povolenie, aby TIM-OK Player mohol inštalovať aplikácie. Povoľ to na otvorenej obrazovke (alebo v Nastaveniach → Zabezpečenie / Aplikácie → Špeciálny prístup → Inštalácia neznámych aplikácií) a vráť sa.</string>
+    <string name="update_retry">Skúsiť znova</string>
+    <string name="update_failed_title">Aktualizácia zlyhala</string>
+    <string name="update_failed_network">Aktualizáciu sa nepodarilo stiahnuť. Skontroluj pripojenie a skús neskôr.</string>
+    <string name="update_failed_checksum">Stiahnutý súbor je poškodený a nebol nainštalovaný. Skús neskôr.</string>
+    <string name="update_failed_installer">Toto zariadenie nemá inštalátor aplikácií pre aktualizácie.</string>
+    <string name="update_ok">OK</string>
+    <string name="update_check">Skontrolovať aktualizácie</string>
+    <string name="update_check_hint">Stlač OK a skontroluj, či je k dispozícii nová verzia</string>
+    <string name="update_checking">Kontrolujem…</string>
+    <string name="update_up_to_date">Máš najnovšiu verziu</string>
 </resources>

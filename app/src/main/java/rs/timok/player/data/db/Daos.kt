@@ -210,6 +210,12 @@ interface WatchProgressDao {
 
     @Query("DELETE FROM watch_progress WHERE playlistId = :playlistId")
     suspend fun deleteAll(playlistId: Long)
+
+    @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId")
+    suspend fun all(playlistId: Long): List<WatchProgressEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(items: List<WatchProgressEntity>)
 }
 
 @Dao
@@ -232,6 +238,12 @@ interface WatchlistDao {
 
     @Query("DELETE FROM watchlist WHERE playlistId = :playlistId")
     suspend fun deleteAll(playlistId: Long)
+
+    @Query("SELECT * FROM watchlist WHERE playlistId = :playlistId ORDER BY addedAt")
+    suspend fun all(playlistId: Long): List<WatchlistEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<WatchlistEntity>)
 
     /** Adds or removes [item]; returns true when it is now on the list. */
     @Transaction

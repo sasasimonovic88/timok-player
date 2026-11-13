@@ -184,4 +184,42 @@
     <string name="external_player_open">Externer Player</string>
     <string name="external_player_choose">Öffnen mit</string>
     <string name="external_player_none">Keine App gefunden, die dieses Video abspielen kann.</string>
+
+    <string name="settings_backup">Sicherung</string>
+    <string name="settings_backup_summary">Favoriten und Einstellungen</string>
+    <string name="backup_save">Sicherung speichern</string>
+    <string name="backup_save_hint">Favoriten, Meine Liste, Weiterschauen und Einstellungen in eine Datei (z. B. Download oder USB-Stick)</string>
+    <string name="backup_restore">Aus Sicherung wiederherstellen</string>
+    <string name="backup_restore_hint">Sicherungsdatei wählen; aktuelle Favoriten werden ersetzt</string>
+    <string name="backup_note">Benutzername und Passwort werden nicht gesichert: zuerst anmelden, dann wiederherstellen.</string>
+    <string name="backup_saved">Sicherung gespeichert (%1$d Favoriten).</string>
+    <string name="backup_restored">Wiederhergestellt: %1$d Favoriten, %2$d in Meine Liste, %3$d in Weiterschauen.</string>
+    <string name="backup_missing">%1$d Favoriten gibt es auf dem Server nicht mehr.</string>
+    <string name="backup_confirm_title">Diese Sicherung wiederherstellen?</string>
+    <string name="backup_confirm_message">Gespeichert %1$s · %2$d Favoriten · %3$d in Meine Liste. Aktuelle Favoriten und Einstellungen werden ersetzt.</string>
+    <string name="backup_confirm">Wiederherstellen</string>
+    <string name="backup_error_no_account">Zuerst bei einem Konto anmelden.</string>
+    <string name="backup_error_invalid">Diese Datei ist keine TIM-OK Player Sicherung.</string>
+    <string name="backup_error_newer">Diese Sicherung stammt von einer neueren App-Version. Bitte zuerst die App aktualisieren.</string>
+    <string name="backup_error_io">Die Datei konnte nicht gelesen oder geschrieben werden.</string>
+    <string name="backup_no_picker">Dieses Gerät hat keine Dateiauswahl.</string>
+
+    <string name="update_available">Neue Version %1$s</string>
+    <string name="update_current">Installiert: %1$s</string>
+    <string name="update_install">Installieren</string>
+    <string name="update_later">Später</string>
+    <string name="update_cancel">Abbrechen</string>
+    <string name="update_downloading">Version %1$s wird geladen…</string>
+    <string name="update_permission_title">Installation des Updates erlauben</string>
+    <string name="update_permission_body">Android braucht die Erlaubnis, dass TIM-OK Player Apps installieren darf. Erlaube es im geöffneten Bildschirm (oder unter Einstellungen → Sicherheit / Apps → Spezieller Zugriff → Unbekannte Apps installieren) und komm dann zurück.</string>
+    <string name="update_retry">Erneut versuchen</string>
+    <string name="update_failed_title">Update fehlgeschlagen</string>
+    <string name="update_failed_network">Das Update konnte nicht geladen werden. Verbindung prüfen und später erneut versuchen.</string>
+    <string name="update_failed_checksum">Die geladene Datei ist beschädigt und wurde nicht installiert. Später erneut versuchen.</string>
+    <string name="update_failed_installer">Dieses Gerät hat keinen App-Installer für Updates.</string>
+    <string name="update_ok">OK</string>
+    <string name="update_check">Nach Updates suchen</string>
+    <string name="update_check_hint">OK drücken, um nach einer neuen Version zu suchen</string>
+    <string name="update_checking">Suche…</string>
+    <string name="update_up_to_date">Du hast die neueste Version</string>
 </resources>

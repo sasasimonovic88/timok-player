@@ -265,6 +265,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                 )
             }
         }
+        rs.timok.player.ui.update.UpdateDialog(mainViewModel.updates)
         if (numberInput.isNotEmpty() && route in Routes.NUMBER_ENTRY) {
             // Same look as the number in the fullscreen player.
             Text(
