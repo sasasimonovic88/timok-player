@@ -131,7 +131,8 @@ fun SettingsScreen(
             )
             Clock(color = Brand.TextSecondary)
         }
-        Spacer(Modifier.height(24.dp))
+        // The tiles' scroll area adds its own top padding (TILE_FOCUS_ROOM).
+        Spacer(Modifier.height(if (section == null) 24.dp - TILE_FOCUS_ROOM else 24.dp))
 
         when (section) {
             null -> Tiles(vm, tileFocus) { s ->
@@ -170,7 +171,12 @@ private fun Tiles(vm: SettingsViewModel, focus: Map<Section, FocusRequester>, on
     // Scrolls when a large display size pushes the last row off screen; focus brings tiles into view.
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()),
+        // The scroll area clips its content: inner padding leaves room for the focused tile's scale and outline
+        // (the header spacer above is reduced by the same amount, so the tiles stay where they were).
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .padding(vertical = TILE_FOCUS_ROOM),
     ) {
         Section.entries.chunked(TILES_PER_ROW).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
@@ -219,6 +225,9 @@ private fun Tile(section: Section, summary: String, warning: Boolean, onClick: (
 }
 
 private val TILE_HEIGHT = 76.dp
+
+/** Space the focused tile grows into (scale + outline) inside the clipping scroll area. */
+private val TILE_FOCUS_ROOM = 8.dp
 
 @Composable
 private fun AccountSection(vm: SettingsViewModel, focus: FocusRequester) {
