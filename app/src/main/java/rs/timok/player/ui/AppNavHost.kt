@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -166,7 +168,16 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                 Routes.CHANNELS, Routes.SEARCH, Routes.PLAYER -> playback.resumeLiveAfterBrowse()
             }
         }
-        NavHost(navController = nav, startDestination = startRoute) {
+        // Animations on: the library default fade (700 ms); off: screens replace each other at once.
+        val animate = rs.timok.player.ui.theme.LocalAnimations.current
+        NavHost(
+            navController = nav,
+            startDestination = startRoute,
+            enterTransition = { if (animate) fadeIn(androidx.compose.animation.core.tween(700)) else EnterTransition.None },
+            exitTransition = { if (animate) fadeOut(androidx.compose.animation.core.tween(700)) else ExitTransition.None },
+            popEnterTransition = { if (animate) fadeIn(androidx.compose.animation.core.tween(700)) else EnterTransition.None },
+            popExitTransition = { if (animate) fadeOut(androidx.compose.animation.core.tween(700)) else ExitTransition.None },
+        ) {
             composable(Routes.LOGIN) {
                 LoginScreen(onSignedIn = {
                     nav.navigate(Routes.CHANNELS) { popUpTo(Routes.LOGIN) { inclusive = true } }
@@ -174,7 +185,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
             }
             composable(
                 Routes.CHANNELS,
-                exitTransition = { if (instantPlayer) ExitTransition.None else null },
+                exitTransition = { if (instantPlayer || !animate) ExitTransition.None else null },
             ) {
                 ChannelsScreen(
                     onPlay = { group, streamId ->
@@ -241,7 +252,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                     navArgument("group") { type = NavType.StringType },
                     navArgument("streamId") { type = NavType.LongType },
                 ),
-                enterTransition = { if (instantPlayer) EnterTransition.None else null },
+                enterTransition = { if (instantPlayer || !animate) EnterTransition.None else null },
             ) {
                 PlayerScreen(
                     onExit = {

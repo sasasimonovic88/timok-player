@@ -230,4 +230,14 @@
     <string name="subtitles_off">Titulky vypnuté</string>
     <string name="subtitles_on">Titulky: %1$s</string>
     <string name="program_not_in_archive">Táto relácia nie je v archíve.</string>
+
+    <string name="settings_animations">Animácie</string>
+    <string name="settings_animations_hint">Vypnuté: zoznamy a obrazovky skáču namiesto plynulého posunu (plynulejšie na slabších zariadeniach)</string>
+    <string name="settings_panel_timeout">Panely sa zatvoria po</string>
+    <string name="settings_panel_timeout_hint">Info lišta počas sledovania; zoznam kanálov a možnosti zostanú o niečo dlhšie</string>
+    <string name="settings_list_fullscreen">Zoznam kanálov prejde na celú obrazovku po</string>
+    <string name="settings_list_fullscreen_hint">Čas bez stlačenia tlačidla v zozname kanálov</string>
+    <string name="settings_seconds">%1$d s</string>
+    <string name="settings_minutes">%1$d min</string>
+    <string name="settings_never_option">Nikdy</string>
 </resources>

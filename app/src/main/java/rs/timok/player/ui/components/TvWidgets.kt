@@ -81,7 +81,13 @@ fun TvClickable(
     var focused by remember { mutableStateOf(false) }
     // A long press already acted; its key-up must not also click.
     var longPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (focused) focusedScale else 1f, tween(FOCUS_ANIM_MS), label = "focusScale")
+    // Animations off: no growing focus at all; the outline and color still show it.
+    val animate = rs.timok.player.ui.theme.LocalAnimations.current
+    val scale by animateFloatAsState(
+        if (focused && animate) focusedScale else 1f,
+        rs.timok.player.ui.theme.motion(tween(FOCUS_ANIM_MS)),
+        label = "focusScale",
+    )
     val container = when {
         focused && highlighted -> Brand.Accent.copy(alpha = 0.45f)
         focused -> Brand.SurfaceFocused

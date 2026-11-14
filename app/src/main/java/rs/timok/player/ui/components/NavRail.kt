@@ -41,7 +41,7 @@ fun NavRail(
     enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val width by animateDpAsState(if (expanded) 220.dp else 72.dp, tween(150), label = "rail")
+    val width by animateDpAsState(if (expanded) 220.dp else 72.dp, rs.timok.player.ui.theme.motion(tween(150)), label = "rail")
     val focusManager = LocalFocusManager.current
 
     Column(

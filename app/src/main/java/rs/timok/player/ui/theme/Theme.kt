@@ -49,10 +49,13 @@ private val colors = darkColorScheme(
 fun TimokTheme(content: @Composable () -> Unit) {
     // "Display size" shrinks dp and sp alike, so layouts keep their proportions while taking less screen.
     val scale by AppPrefs.uiScale.collectAsState()
+    val animations by AppPrefs.animations.collectAsState()
     val density = LocalDensity.current
     CompositionLocalProvider(
         LocalDensity provides Density(density.density * scale, density.fontScale),
-        LocalBringIntoViewSpec provides QuickScroll,
+        // Focus scrolling in every list: a short glide, or a jump when animations are off.
+        LocalBringIntoViewSpec provides if (animations) QuickScroll else JumpScroll,
+        LocalAnimations provides animations,
     ) {
         MaterialTheme(colorScheme = colors, content = content)
     }
@@ -65,4 +68,10 @@ fun TimokTheme(content: @Composable () -> Unit) {
 @OptIn(ExperimentalFoundationApi::class)
 private val QuickScroll = object : BringIntoViewSpec {
     override val scrollAnimationSpec: AnimationSpec<Float> = tween(durationMillis = 120, easing = FastOutSlowInEasing)
+}
+
+/** Animations off: the list jumps straight to the focused item. */
+@OptIn(ExperimentalFoundationApi::class)
+private val JumpScroll = object : BringIntoViewSpec {
+    override val scrollAnimationSpec: AnimationSpec<Float> = androidx.compose.animation.core.snap()
 }

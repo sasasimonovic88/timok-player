@@ -109,7 +109,7 @@ fun SearchScreen(
     }
 
     var railFocused by remember { mutableStateOf(false) }
-    val panelWidth by animateDpAsState(PanelMaxWidth + if (railFocused) RailExpansion else 0.dp, tween(150), label = "panel")
+    val panelWidth by animateDpAsState(PanelMaxWidth + if (railFocused) RailExpansion else 0.dp, rs.timok.player.ui.theme.motion(tween(150)), label = "panel")
     Row(Modifier.fillMaxSize()) {
         Row(Modifier.widthIn(max = panelWidth).fillMaxHeight().background(scrim).padding(vertical = 24.dp)) {
             Box(Modifier.onFocusChanged { railFocused = it.hasFocus }) {

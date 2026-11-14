@@ -8,6 +8,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import rs.timok.player.data.settings.AppPrefs
+import rs.timok.player.ui.theme.motion
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
@@ -124,19 +126,19 @@ fun PlayerScreen(
     LaunchedEffect(zapCounter) { infoVisible = true; infoToken++ }
     LaunchedEffect(infoToken, infoVisible) {
         if (infoVisible) {
-            delay(INFO_TIMEOUT_MS)
+            delay(AppPrefs.panelTimeoutMs(INFO_TIMEOUT_MS))
             infoVisible = false
         }
     }
     LaunchedEffect(overlayVisible, lastOverlayInput) {
         if (overlayVisible) {
-            delay(OVERLAY_TIMEOUT_MS)
+            delay(AppPrefs.panelTimeoutMs(OVERLAY_TIMEOUT_MS))
             overlayVisible = false
         }
     }
     LaunchedEffect(optionsVisible, lastOverlayInput) {
         if (optionsVisible) {
-            delay(OPTIONS_TIMEOUT_MS)
+            delay(AppPrefs.panelTimeoutMs(OPTIONS_TIMEOUT_MS))
             optionsVisible = false
         }
     }
@@ -250,8 +252,8 @@ fun PlayerScreen(
 
         AnimatedVisibility(
             visible = infoVisible && !overlayVisible && !optionsVisible && current != null,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut(),
+            enter = motion(slideInVertically { it } + fadeIn()),
+            exit = motion(slideOutVertically { it } + fadeOut()),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             current?.let { InfoBar(it, nowNext, streamInfo) }
@@ -272,8 +274,8 @@ fun PlayerScreen(
 
         AnimatedVisibility(
             visible = optionsVisible && current != null,
-            enter = slideInHorizontally { it } + fadeIn(),
-            exit = slideOutHorizontally { it } + fadeOut(),
+            enter = motion(slideInHorizontally { it } + fadeIn()),
+            exit = motion(slideOutHorizontally { it } + fadeOut()),
             modifier = Modifier.align(Alignment.CenterEnd),
         ) {
             current?.let { channel ->
@@ -367,7 +369,7 @@ private fun ChannelOverlay(
     val listState = rememberLazyListState()
     val currentFocus = remember { FocusRequester() }
     val now = remember(visible) { System.currentTimeMillis() }
-    val alpha by animateFloatAsState(if (visible) 1f else 0f, tween(120), label = "overlay")
+    val alpha by animateFloatAsState(if (visible) 1f else 0f, motion(tween(120)), label = "overlay")
 
     // Keep the current channel near the top even while hidden, so opening needs no scroll.
     LaunchedEffect(currentId, channels.size) {

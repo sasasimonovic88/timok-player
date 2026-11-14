@@ -230,4 +230,14 @@
     <string name="subtitles_off">Untertitel aus</string>
     <string name="subtitles_on">Untertitel: %1$s</string>
     <string name="program_not_in_archive">Diese Sendung ist nicht im Archiv.</string>
+
+    <string name="settings_animations">Animationen</string>
+    <string name="settings_animations_hint">Aus: Listen und Bildschirme springen statt zu gleiten (flüssiger auf schwachen Geräten)</string>
+    <string name="settings_panel_timeout">Leisten schließen nach</string>
+    <string name="settings_panel_timeout_hint">Infoleiste beim Ansehen; Senderliste und Optionen bleiben etwas länger</string>
+    <string name="settings_list_fullscreen">Senderliste wird Vollbild nach</string>
+    <string name="settings_list_fullscreen_hint">Zeit ohne Tastendruck in der Senderliste</string>
+    <string name="settings_seconds">%1$d s</string>
+    <string name="settings_minutes">%1$d min</string>
+    <string name="settings_never_option">Nie</string>
 </resources>

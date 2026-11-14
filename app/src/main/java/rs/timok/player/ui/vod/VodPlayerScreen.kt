@@ -9,6 +9,8 @@ import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
+import rs.timok.player.data.settings.AppPrefs
+import rs.timok.player.ui.theme.motion
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
@@ -106,13 +108,13 @@ fun VodPlayerScreen(onExit: () -> Unit, vm: VodPlayerViewModel = hiltViewModel()
     // Controls hide while playing; they stay up when paused.
     LaunchedEffect(controlsVisible, lastInput, playing) {
         if (controlsVisible && playing) {
-            delay(CONTROLS_TIMEOUT_MS)
+            delay(AppPrefs.panelTimeoutMs(CONTROLS_TIMEOUT_MS))
             controlsVisible = false
         }
     }
     LaunchedEffect(optionsVisible, lastInput) {
         if (optionsVisible) {
-            delay(OPTIONS_TIMEOUT_MS)
+            delay(AppPrefs.panelTimeoutMs(OPTIONS_TIMEOUT_MS))
             optionsVisible = false
         }
     }
@@ -213,8 +215,8 @@ fun VodPlayerScreen(onExit: () -> Unit, vm: VodPlayerViewModel = hiltViewModel()
 
         AnimatedVisibility(
             visible = (controlsVisible || !playing) && !optionsVisible,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut(),
+            enter = motion(slideInVertically { it } + fadeIn()),
+            exit = motion(slideOutVertically { it } + fadeOut()),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Controls(
@@ -232,8 +234,8 @@ fun VodPlayerScreen(onExit: () -> Unit, vm: VodPlayerViewModel = hiltViewModel()
 
         AnimatedVisibility(
             visible = optionsVisible,
-            enter = slideInHorizontally { it } + fadeIn(),
-            exit = slideOutHorizontally { it } + fadeOut(),
+            enter = motion(slideInHorizontally { it } + fadeIn()),
+            exit = motion(slideOutHorizontally { it } + fadeOut()),
             modifier = Modifier.align(Alignment.CenterEnd),
         ) {
             OptionsPanel(

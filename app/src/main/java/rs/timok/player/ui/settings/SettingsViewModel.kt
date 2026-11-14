@@ -134,6 +134,15 @@ class SettingsViewModel @Inject constructor(
 
     fun setUiScale(scale: Float) = AppPrefs.setUiScale(context, scale)
 
+    val animations: StateFlow<Boolean> = AppPrefs.animations
+    fun toggleAnimations() = AppPrefs.setAnimations(context, !AppPrefs.animations.value)
+
+    val panelTimeout: StateFlow<Int> = AppPrefs.panelTimeout
+    fun setPanelTimeout(seconds: Int) = AppPrefs.setPanelTimeout(context, seconds)
+
+    val listFullscreen: StateFlow<Int> = AppPrefs.listFullscreen
+    fun setListFullscreen(seconds: Int) = AppPrefs.setListFullscreen(context, seconds)
+
     private val _autoStart = MutableStateFlow(AppPrefs.autoStart(context))
     val autoStart: StateFlow<Boolean> = _autoStart
 

@@ -87,7 +87,7 @@ class ChannelsViewModel @Inject constructor(
             _group.value = g
             // Resume the last channel behind the list, like a TV that remembers where it was.
             if (lastStream != null && playback.currentStreamId.value == null && settings.backgroundPlayback.first()) {
-                playback.play(lastStream, if (g == GroupKey.Recent) GroupKey.All else g)
+                playback.play(lastStream, if (g == GroupKey.Recent) recentPlayGroup(lastStream) else g)
             }
         }
     }
@@ -100,7 +100,7 @@ class ChannelsViewModel @Inject constructor(
         val (streamId, group) = playback.lastPlayed ?: return
         if (_move.value != null) return
         focusTargetId = streamId
-        // "Recently watched" plays in "All channels" (see playGroup) but should stay the shown group.
+        // "Recently watched" plays in Favorites or All (see playGroupFor) but should stay the shown group.
         if (_group.value == GroupKey.Recent) return
         if (_group.value != null && _group.value != group) selectGroup(group)
     }
@@ -174,8 +174,25 @@ class ChannelsViewModel @Inject constructor(
         focusTargetId = row.streamId
         if (!settings.backgroundPlayback.first()) return true
         if (playback.currentStreamId.value == row.streamId) return true
-        playback.play(row.streamId, _group.value ?: GroupKey.All)
+        playback.play(row.streamId, playGroupFor(row))
         return false
+    }
+
+    /**
+     * Group the player zaps in for [row]. "Recently watched" reorders itself with every channel opened, so a
+     * channel from it plays in Favorites when it is one (quick list and up/down then go through favorites),
+     * else in All channels.
+     */
+    fun playGroupFor(row: ChannelRow): GroupKey = when (val g = _group.value) {
+        null -> GroupKey.All
+        GroupKey.Recent -> if (row.isFavorite) GroupKey.Favorites else GroupKey.All
+        else -> g
+    }
+
+    private suspend fun recentPlayGroup(streamId: Long): GroupKey {
+        val pid = playlists.activePlaylistNow()?.id ?: return GroupKey.All
+        val isFavorite = channels.channels(pid, GroupKey.Favorites).first().any { it.streamId == streamId }
+        return if (isFavorite) GroupKey.Favorites else GroupKey.All
     }
 
     /** Group key and stream of the channel playing behind the list, for going fullscreen on it. */

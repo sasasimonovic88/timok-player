@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -157,6 +158,7 @@ private fun Body(text: String, color: Color) {
 /** Library list and full license texts from assets; D-pad up/down scrolls a page at a time, Back closes. */
 @Composable
 private fun LicensesDialog(onDismiss: () -> Unit) {
+    val animate = rs.timok.player.ui.theme.LocalAnimations.current
     val context = LocalContext.current
     var text by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
@@ -194,7 +196,7 @@ private fun LicensesDialog(onDismiss: () -> Unit) {
                             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_CHANNEL_UP -> -1
                             else -> return@onKeyEvent false
                         }
-                        scope.launch { scroll.animateScrollBy(step * PAGE_PX) }
+                        scope.launch { if (animate) scroll.animateScrollBy(step * PAGE_PX) else scroll.scrollBy(step * PAGE_PX) }
                         true
                     }
                     .focusable()

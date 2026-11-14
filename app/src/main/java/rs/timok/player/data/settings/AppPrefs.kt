@@ -17,6 +17,32 @@ object AppPrefs {
     private const val KEY_UI_SCALE = "ui_scale"
     private const val KEY_SECURE_DNS = "secure_dns"
     private const val KEY_EPG_PRESETS = "epg_presets"
+    private const val KEY_ANIMATIONS = "animations"
+    private const val KEY_PANEL_TIMEOUT = "panel_timeout_s"
+    private const val KEY_LIST_FULLSCREEN = "list_fullscreen_s"
+
+    /** Seconds the info bar stays up; the other panels scale with it (see [panelTimeoutMs]). */
+    val panelTimeouts = listOf(3, 5, 10)
+
+    /** Seconds of inactivity before the channel list turns into fullscreen video; 0 = never. */
+    val listFullscreenDelays = listOf(10, 20, 60, 0)
+
+    private val _animations = MutableStateFlow(true)
+
+    /** Scrolling, screen transitions, panels and focus scale animate; off makes everything jump (weak boxes). */
+    val animations: StateFlow<Boolean> = _animations
+
+    private val _panelTimeout = MutableStateFlow(5)
+    val panelTimeout: StateFlow<Int> = _panelTimeout
+
+    private val _listFullscreen = MutableStateFlow(20)
+    val listFullscreen: StateFlow<Int> = _listFullscreen
+
+    /**
+     * How long a panel stays up without input. [baseMs] is its time at the default 5 s setting (info bar 5 s,
+     * channel overlay 8 s, options 15 s...), so all panels get shorter or longer together.
+     */
+    fun panelTimeoutMs(baseMs: Long): Long = baseMs * _panelTimeout.value / 5
 
     /** Supported UI languages; an empty tag means "follow the system". */
     val languages = listOf("", "sr", "en", "de", "sk")
@@ -46,6 +72,24 @@ object AppPrefs {
         _uiScale.value = prefs(context).getFloat(KEY_UI_SCALE, 1f)
         _secureDns.value = prefs(context).getBoolean(KEY_SECURE_DNS, true)
         _epgPresets.value = prefs(context).getStringSet(KEY_EPG_PRESETS, null)?.toSet() ?: EpgPresets.defaultIds
+        _animations.value = prefs(context).getBoolean(KEY_ANIMATIONS, true)
+        _panelTimeout.value = prefs(context).getInt(KEY_PANEL_TIMEOUT, 5)
+        _listFullscreen.value = prefs(context).getInt(KEY_LIST_FULLSCREEN, 20)
+    }
+
+    fun setAnimations(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_ANIMATIONS, enabled).apply()
+        _animations.value = enabled
+    }
+
+    fun setPanelTimeout(context: Context, seconds: Int) {
+        prefs(context).edit().putInt(KEY_PANEL_TIMEOUT, seconds).apply()
+        _panelTimeout.value = seconds
+    }
+
+    fun setListFullscreen(context: Context, seconds: Int) {
+        prefs(context).edit().putInt(KEY_LIST_FULLSCREEN, seconds).apply()
+        _listFullscreen.value = seconds
     }
 
     fun setEpgPresets(context: Context, ids: Set<String>) {

@@ -69,6 +69,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import rs.timok.player.R
+import rs.timok.player.data.settings.AppPrefs
+import rs.timok.player.ui.theme.scrollToItemMotion
 import rs.timok.player.data.db.ChannelRow
 import rs.timok.player.data.repo.GroupKey
 import rs.timok.player.ui.components.ChannelRowContent
@@ -100,7 +102,6 @@ private val PanelMaxWidth = 880.dp
 private val RailExpansion = 148.dp
 
 /** Without a key press for this long, the list gives way to the playing channel in fullscreen. */
-private const val IDLE_FULLSCREEN_MS = 20_000L
 
 @Composable
 fun ChannelsScreen(
@@ -139,7 +140,9 @@ fun ChannelsScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lastInput, playingId, move, confirmExit) {
         if (playingId == null || move != null || confirmExit) return@LaunchedEffect
-        delay(IDLE_FULLSCREEN_MS)
+        val idleSeconds = AppPrefs.listFullscreen.value
+        if (idleSeconds <= 0) return@LaunchedEffect
+        delay(idleSeconds * 1000L)
         if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@LaunchedEffect
         vm.fullscreenTarget()?.let { (groupKey, streamId) -> onPlay(groupKey, streamId) }
     }
@@ -177,7 +180,7 @@ fun ChannelsScreen(
 
     // The rail widens when focused; grow the panel with it instead of squeezing the channel list.
     var railFocused by remember { mutableStateOf(false) }
-    val panelWidth by animateDpAsState(PanelMaxWidth + if (railFocused) RailExpansion else 0.dp, tween(150), label = "panel")
+    val panelWidth by animateDpAsState(PanelMaxWidth + if (railFocused) RailExpansion else 0.dp, rs.timok.player.ui.theme.motion(tween(150)), label = "panel")
     Row(
         Modifier.fillMaxSize().onPreviewKeyEvent {
             lastInput = System.currentTimeMillis()
@@ -257,10 +260,10 @@ fun ChannelsScreen(
                                 if (!found) runCatching { groupFocus.requestFocus() }
                             },
                             onFocused = { vm.focusTargetId = it },
-                            onProgram = { row -> onProgram(playGroup(group), row.streamId) },
+                            onProgram = { row -> onProgram(vm.playGroupFor(row).key, row.streamId) },
                             onClick = { row ->
                                 scope.launch {
-                                    if (vm.onChannelClick(row)) onPlay(playGroup(group), row.streamId)
+                                    if (vm.onChannelClick(row)) onPlay(vm.playGroupFor(row).key, row.streamId)
                                 }
                             },
                             onLongClick = vm::onLongPress,
@@ -336,6 +339,7 @@ private fun ChannelList(
     onMove: (Int) -> Unit,
     onCommitMove: () -> Unit,
 ) {
+    val animate = rs.timok.player.ui.theme.LocalAnimations.current
     val listState = rememberLazyListState()
     val targetRequester = remember { FocusRequester() }
     // Captured when a restore or move starts: focus events meanwhile must not retarget it.
@@ -363,7 +367,7 @@ private fun ChannelList(
         val idx = rows.indexOfFirst { it.streamId == movingId }
         val visible = listState.layoutInfo.visibleItemsInfo
         if (idx >= 0 && visible.isNotEmpty() && (idx <= visible.first().index || idx >= visible.last().index)) {
-            listState.animateScrollToItem((idx - 2).coerceAtLeast(0))
+            listState.scrollToItemMotion((idx - 2).coerceAtLeast(0), animate)
         }
         runCatching { targetRequester.requestFocus() }
     }
@@ -413,15 +417,6 @@ private fun ChannelList(
             }
         }
     }
-}
-
-/**
- * Group the player zaps in. "Recently watched" reorders itself with every channel opened, so up/down there would
- * jump around; such channels play in "All channels" instead.
- */
-private fun playGroup(group: GroupKey?): String = when (group) {
-    null, GroupKey.Recent -> GroupKey.All.key
-    else -> group.key
 }
 
 @Composable

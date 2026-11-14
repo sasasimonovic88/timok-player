@@ -235,4 +235,14 @@
     <string name="subtitles_off">Subtitles off</string>
     <string name="subtitles_on">Subtitles: %1$s</string>
     <string name="program_not_in_archive">This programme is not in the archive.</string>
+
+    <string name="settings_animations">Animations</string>
+    <string name="settings_animations_hint">Off: lists and screens jump instead of gliding (smoother on weak devices)</string>
+    <string name="settings_panel_timeout">Panels close after</string>
+    <string name="settings_panel_timeout_hint">Info bar while watching; the channel list and options stay a little longer</string>
+    <string name="settings_list_fullscreen">Channel list goes fullscreen after</string>
+    <string name="settings_list_fullscreen_hint">Time without a key press in the channel list</string>
+    <string name="settings_seconds">%1$d s</string>
+    <string name="settings_minutes">%1$d min</string>
+    <string name="settings_never_option">Never</string>
 </resources>

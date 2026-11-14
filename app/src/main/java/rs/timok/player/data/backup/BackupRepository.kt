@@ -89,6 +89,9 @@ data class BackupSettings(
     val uiScale: Float = 1f,
     val secureDns: Boolean = true,
     val epgPresets: List<String>? = null,
+    val animations: Boolean = true,
+    val panelTimeout: Int = 5,
+    val listFullscreen: Int = 20,
 )
 
 /** Per-account options that are not secrets. */
@@ -149,6 +152,9 @@ class BackupRepository @Inject constructor(
                 uiScale = AppPrefs.uiScale.value,
                 secureDns = AppPrefs.secureDns.value,
                 epgPresets = AppPrefs.epgPresets.value.sorted(),
+                animations = AppPrefs.animations.value,
+                panelTimeout = AppPrefs.panelTimeout.value,
+                listFullscreen = AppPrefs.listFullscreen.value,
             ),
             account = BackupAccountSettings(p.streamFormat, p.userAgent, p.epgOffsetHours, p.epgUrl),
         )
@@ -218,6 +224,9 @@ class BackupRepository @Inject constructor(
         AppPrefs.setUiScale(context, s.uiScale)
         AppPrefs.setSecureDns(context, s.secureDns)
         s.epgPresets?.let { AppPrefs.setEpgPresets(context, it.toSet()) }
+        AppPrefs.setAnimations(context, s.animations)
+        if (s.panelTimeout in AppPrefs.panelTimeouts) AppPrefs.setPanelTimeout(context, s.panelTimeout)
+        if (s.listFullscreen in AppPrefs.listFullscreenDelays) AppPrefs.setListFullscreen(context, s.listFullscreen)
         RestoreResult(matched.size, missing, file.watchlist.size, file.progress.size)
     }
 }

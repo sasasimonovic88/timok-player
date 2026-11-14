@@ -416,6 +416,9 @@ private fun PlaybackSection(vm: SettingsViewModel, focus: FocusRequester) {
 private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
     val language by vm.language.collectAsStateWithLifecycle()
     val uiScale by vm.uiScale.collectAsStateWithLifecycle()
+    val animations by vm.animations.collectAsStateWithLifecycle()
+    val panelTimeout by vm.panelTimeout.collectAsStateWithLifecycle()
+    val listFullscreen by vm.listFullscreen.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     Column(Modifier.width(560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.settings_display_size), style = MaterialTheme.typography.titleMedium, color = Brand.TextPrimary)
@@ -428,6 +431,50 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
                     selected = selected,
                     onClick = { vm.setUiScale(scale) },
                     modifier = if (selected) Modifier.focusRequester(focus) else Modifier,
+                )
+            }
+        }
+        SettingRow(
+            title = stringResource(R.string.settings_animations),
+            hint = stringResource(R.string.settings_animations_hint),
+            value = onOff(animations),
+            valueActive = animations,
+            onClick = vm::toggleAnimations,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(
+            stringResource(R.string.settings_panel_timeout),
+            style = MaterialTheme.typography.titleMedium,
+            color = Brand.TextPrimary,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Text(stringResource(R.string.settings_panel_timeout_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
+            AppPrefs.panelTimeouts.forEach { seconds ->
+                Chip(
+                    text = stringResource(R.string.settings_seconds, seconds),
+                    selected = seconds == panelTimeout,
+                    onClick = { vm.setPanelTimeout(seconds) },
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.settings_list_fullscreen),
+            style = MaterialTheme.typography.titleMedium,
+            color = Brand.TextPrimary,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Text(stringResource(R.string.settings_list_fullscreen_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
+            AppPrefs.listFullscreenDelays.forEach { seconds ->
+                Chip(
+                    text = when {
+                        seconds == 0 -> stringResource(R.string.settings_never_option)
+                        seconds >= 60 -> stringResource(R.string.settings_minutes, seconds / 60)
+                        else -> stringResource(R.string.settings_seconds, seconds)
+                    },
+                    selected = seconds == listFullscreen,
+                    onClick = { vm.setListFullscreen(seconds) },
                 )
             }
         }

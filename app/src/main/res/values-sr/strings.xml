@@ -230,4 +230,14 @@
     <string name="subtitles_off">Titl isključen</string>
     <string name="subtitles_on">Titl: %1$s</string>
     <string name="program_not_in_archive">Ova emisija nije u arhivi.</string>
+
+    <string name="settings_animations">Animacije</string>
+    <string name="settings_animations_hint">Isključeno: liste i ekrani skaču umesto da klize (tečnije na slabijim uređajima)</string>
+    <string name="settings_panel_timeout">Paneli se zatvaraju posle</string>
+    <string name="settings_panel_timeout_hint">Info traka tokom gledanja; lista kanala i meni opcija ostaju malo duže</string>
+    <string name="settings_list_fullscreen">Lista kanala prelazi u ceo ekran posle</string>
+    <string name="settings_list_fullscreen_hint">Vreme bez pritiska tastera na listi kanala</string>
+    <string name="settings_seconds">%1$d s</string>
+    <string name="settings_minutes">%1$d min</string>
+    <string name="settings_never_option">Nikad</string>
 </resources>

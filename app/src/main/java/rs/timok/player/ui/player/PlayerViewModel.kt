@@ -58,7 +58,8 @@ class PlayerViewModel @Inject constructor(
     val sleepRemainingMs: StateFlow<Long?> = sleepTimer.remainingMs
 
     private val playlist = MutableStateFlow<PlaylistEntity?>(null)
-    private val group = MutableStateFlow(GroupKey.parse(savedState.get<String>("group")))
+    // "Recently watched" is never zapped through (it reorders itself); such a start falls back to All.
+    private val group = MutableStateFlow(GroupKey.parse(savedState.get<String>("group")).let { if (it == GroupKey.Recent) GroupKey.All else it })
     /** Group the player zaps in, for screens opened from it. */
     val groupKey: String get() = group.value.key
 
