@@ -169,7 +169,7 @@ private fun Tiles(vm: SettingsViewModel, focus: Map<Section, FocusRequester>, on
     )
     // Scrolls when a large display size pushes the last row off screen; focus brings tiles into view.
     Column(
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()),
     ) {
         Section.entries.chunked(TILES_PER_ROW).forEach { row ->
@@ -197,17 +197,18 @@ private val tileShape = RoundedCornerShape(8.dp)
 
 @Composable
 private fun Tile(section: Section, summary: String, warning: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    TvClickable(onClick = onClick, modifier = modifier.height(150.dp), focusedScale = 1.05f) {
-        Column(
-            Modifier.fillMaxSize().background(Brand.Surface.copy(alpha = 0.6f), tileShape).padding(20.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+    // Compact: icon beside the text, so all tiles fit on one screen even at 100% display size.
+    TvClickable(onClick = onClick, modifier = modifier.height(TILE_HEIGHT), focusedScale = 1.04f) {
+        Row(
+            Modifier.fillMaxSize().background(Brand.Surface.copy(alpha = 0.6f), tileShape).padding(horizontal = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(painterResource(section.icon), contentDescription = null, tint = Brand.Accent, modifier = Modifier.size(36.dp))
-            Column {
-                Text(stringResource(section.title), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Icon(painterResource(section.icon), contentDescription = null, tint = Brand.Accent, modifier = Modifier.size(30.dp))
+            Column(Modifier.padding(start = 16.dp)) {
+                Text(stringResource(section.title), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     if (warning) "⚠ $summary" else summary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = if (warning) Brand.Accent else Brand.TextSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -216,6 +217,8 @@ private fun Tile(section: Section, summary: String, warning: Boolean, onClick: (
         }
     }
 }
+
+private val TILE_HEIGHT = 76.dp
 
 @Composable
 private fun AccountSection(vm: SettingsViewModel, focus: FocusRequester) {
