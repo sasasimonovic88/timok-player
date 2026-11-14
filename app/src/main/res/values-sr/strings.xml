@@ -244,4 +244,16 @@
     <string name="nav_guide">TV vodič</string>
     <string name="guide_starts_in">za %1$d min</string>
     <string name="guide_ended">završeno</string>
+
+    <string name="settings_accent">Boja</string>
+    <string name="accent_orange">Narandžasta</string>
+    <string name="accent_blue">Plava</string>
+    <string name="accent_green">Zelena</string>
+    <string name="accent_purple">Ljubičasta</string>
+    <string name="settings_compact_list">Kompaktna lista kanala</string>
+    <string name="settings_compact_list_hint">Niži redovi bez reda „Sledi:“, pa staje više kanala</string>
+    <string name="settings_stream_badges">Detalji streama na info traci</string>
+    <string name="settings_stream_badges_hint">Rezolucija, fps, kodek i protok</string>
+    <string name="settings_clock_overlay">Sat tokom gledanja</string>
+    <string name="settings_clock_overlay_hint">Mali sat u uglu slike</string>
 </resources>

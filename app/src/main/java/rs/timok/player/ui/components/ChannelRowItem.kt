@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import rs.timok.player.data.settings.AppPrefs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -59,8 +61,10 @@ private const val LOGO_DECODE_HEIGHT = 150
 /** One channel line: number, logo, name and now/next with progress. */
 @Composable
 fun ChannelRowContent(row: ChannelRow, now: Long, compact: Boolean = false, playing: Boolean = false) {
+    // "Compact list" (Settings → Appearance): lower rows with a smaller logo and no "next" line.
+    val dense = AppPrefs.compactList.collectAsState().value
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = if (dense) 4.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -72,7 +76,7 @@ fun ChannelRowContent(row: ChannelRow, now: Long, compact: Boolean = false, play
             fontSize = 16.sp,
             fontWeight = if (playing) FontWeight.Bold else FontWeight.Normal,
         )
-        ChannelLogo(row.logo, Modifier.size(width = 64.dp, height = 44.dp))
+        ChannelLogo(row.logo, if (dense) Modifier.size(width = 52.dp, height = 34.dp) else Modifier.size(width = 64.dp, height = 44.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -93,7 +97,7 @@ fun ChannelRowContent(row: ChannelRow, now: Long, compact: Boolean = false, play
                         Modifier.fillMaxWidth(0.6f).padding(top = 3.dp),
                     )
                 }
-                if (!compact && row.nextTitle != null) {
+                if (!compact && !dense && row.nextTitle != null) {
                     Text(
                         stringResource(R.string.next_program, row.nextTitle),
                         color = Brand.TextSecondary.copy(alpha = 0.7f),
@@ -102,7 +106,7 @@ fun ChannelRowContent(row: ChannelRow, now: Long, compact: Boolean = false, play
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            } else if (!compact) {
+            } else if (!compact && !dense) {
                 Text(stringResource(R.string.no_program_info), color = Brand.TextSecondary.copy(alpha = 0.5f), fontSize = 13.sp)
             }
         }
@@ -110,4 +114,8 @@ fun ChannelRowContent(row: ChannelRow, now: Long, compact: Boolean = false, play
 }
 
 val ChannelRowHeight = 86.dp
-val ChannelRowModifier = Modifier.fillMaxWidth().height(ChannelRowHeight)
+private val CompactRowHeight = 60.dp
+
+/** Height of a channel row; follows the "compact list" setting. */
+val ChannelRowModifier: Modifier
+    @Composable get() = Modifier.fillMaxWidth().height(if (AppPrefs.compactList.collectAsState().value) CompactRowHeight else ChannelRowHeight)

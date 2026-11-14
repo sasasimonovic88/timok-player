@@ -68,6 +68,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import rs.timok.player.R
+import rs.timok.player.ui.components.WatchClock
 import rs.timok.player.data.db.ChannelRow
 import rs.timok.player.data.db.ProgramEntity
 import rs.timok.player.player.PlaybackStatus
@@ -241,6 +242,8 @@ fun PlayerScreen(
             },
     ) {
         StatusIndicator(status)
+        // The typed channel number uses the same corner.
+        WatchClock(hidden = numberInput.isNotEmpty() || overlayVisible || optionsVisible)
 
         if (numberInput.isNotEmpty()) {
             Text(

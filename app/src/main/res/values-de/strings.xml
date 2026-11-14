@@ -244,4 +244,16 @@
     <string name="nav_guide">TV-Programm</string>
     <string name="guide_starts_in">in %1$d min</string>
     <string name="guide_ended">beendet</string>
+
+    <string name="settings_accent">Farbe</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_blue">Blau</string>
+    <string name="accent_green">Grün</string>
+    <string name="accent_purple">Lila</string>
+    <string name="settings_compact_list">Kompakte Senderliste</string>
+    <string name="settings_compact_list_hint">Niedrigere Zeilen ohne „Danach“-Zeile, es passen mehr Sender</string>
+    <string name="settings_stream_badges">Stream-Details in der Infoleiste</string>
+    <string name="settings_stream_badges_hint">Auflösung, fps, Codec und Bitrate</string>
+    <string name="settings_clock_overlay">Uhr beim Ansehen</string>
+    <string name="settings_clock_overlay_hint">Kleine Uhr in der Bildecke</string>
 </resources>

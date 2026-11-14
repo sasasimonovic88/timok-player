@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import rs.timok.player.data.settings.AppPrefs
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -165,13 +167,19 @@ internal fun StreamBadges(info: StreamInfo, hasArchive: Boolean = false, modifie
     val audioTracks = stringResource(R.string.badge_audio_tracks, info.audioTrackCount)
     val subtitles = stringResource(R.string.badge_subtitles)
     val archive = stringResource(R.string.badge_archive)
+    // "Stream details" off (Settings → Appearance): only what matters to a viewer (audio tracks, subtitles, archive).
+    val technical = AppPrefs.streamBadges.collectAsState().value
+    val anyLeft = info.audioTrackCount > 1 || info.hasSubtitles || hasArchive
+    if (!technical && !anyLeft) return
     Row(modifier.height(24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        info.resolutionLabel?.let { Badge(it, highlighted = true) }
-        if (info.height > 0) Badge("${info.width}×${info.height}")
-        if (info.frameRate > 0f) Badge("${formatFps(info.frameRate)} fps")
-        info.videoCodec?.let { Badge(it) }
-        info.audioCodec?.let { codec -> Badge(listOfNotNull(codec, info.channelLayout).joinToString(" ")) }
-        if (info.bitrateKbps > 0) Badge(formatBitrate(info.bitrateKbps))
+        if (technical) {
+            info.resolutionLabel?.let { Badge(it, highlighted = true) }
+            if (info.height > 0) Badge("${info.width}×${info.height}")
+            if (info.frameRate > 0f) Badge("${formatFps(info.frameRate)} fps")
+            info.videoCodec?.let { Badge(it) }
+            info.audioCodec?.let { codec -> Badge(listOfNotNull(codec, info.channelLayout).joinToString(" ")) }
+            if (info.bitrateKbps > 0) Badge(formatBitrate(info.bitrateKbps))
+        }
         if (info.audioTrackCount > 1) Badge(audioTracks)
         if (info.hasSubtitles) Badge(subtitles)
         if (hasArchive) Badge(archive)

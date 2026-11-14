@@ -140,6 +140,18 @@ class SettingsViewModel @Inject constructor(
     val panelTimeout: StateFlow<Int> = AppPrefs.panelTimeout
     fun setPanelTimeout(seconds: Int) = AppPrefs.setPanelTimeout(context, seconds)
 
+    val compactList: StateFlow<Boolean> = AppPrefs.compactList
+    fun toggleCompactList() = AppPrefs.setCompactList(context, !AppPrefs.compactList.value)
+
+    val streamBadges: StateFlow<Boolean> = AppPrefs.streamBadges
+    fun toggleStreamBadges() = AppPrefs.setStreamBadges(context, !AppPrefs.streamBadges.value)
+
+    val clockOverlay: StateFlow<Boolean> = AppPrefs.clockOverlay
+    fun toggleClockOverlay() = AppPrefs.setClockOverlay(context, !AppPrefs.clockOverlay.value)
+
+    val accent: StateFlow<String> = AppPrefs.accent
+    fun setAccent(name: String) = AppPrefs.setAccent(context, name)
+
     val listFullscreen: StateFlow<Int> = AppPrefs.listFullscreen
     fun setListFullscreen(seconds: Int) = AppPrefs.setListFullscreen(context, seconds)
 

@@ -244,4 +244,16 @@
     <string name="nav_guide">TV program</string>
     <string name="guide_starts_in">o %1$d min</string>
     <string name="guide_ended">skončené</string>
+
+    <string name="settings_accent">Farba</string>
+    <string name="accent_orange">Oranžová</string>
+    <string name="accent_blue">Modrá</string>
+    <string name="accent_green">Zelená</string>
+    <string name="accent_purple">Fialová</string>
+    <string name="settings_compact_list">Kompaktný zoznam kanálov</string>
+    <string name="settings_compact_list_hint">Nižšie riadky bez riadku „Ďalej“, zmestí sa viac kanálov</string>
+    <string name="settings_stream_badges">Detaily streamu na info lište</string>
+    <string name="settings_stream_badges_hint">Rozlíšenie, fps, kodek a dátový tok</string>
+    <string name="settings_clock_overlay">Hodiny počas sledovania</string>
+    <string name="settings_clock_overlay_hint">Malé hodiny v rohu obrazu</string>
 </resources>

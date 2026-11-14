@@ -8,6 +8,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
@@ -20,7 +22,24 @@ import androidx.tv.material3.darkColorScheme
 // TIM-OK Digital placeholder palette; keep in sync with res/values/colors.xml.
 object Brand {
     val Primary = Color(0xFF1565C0)
-    val Accent = Color(0xFFFF8F00)
+
+    /** Focus outline and highlights; follows Settings → Appearance → Color (snapshot state, so screens redraw). */
+    val Accent: Color get() = accentState.value
+    private val accentState = mutableStateOf(accentColor("orange"))
+
+    /** Applied by the theme from the stored choice. */
+    fun setAccent(name: String) {
+        accentState.value = accentColor(name)
+    }
+
+    /** All accents are light enough for the black text drawn on focused items. */
+    fun accentColor(name: String): Color = when (name) {
+        "blue" -> Color(0xFF4FC3F7)
+        "green" -> Color(0xFF66BB6A)
+        "purple" -> Color(0xFFBA68C8)
+        else -> Color(0xFFFF8F00)
+    }
+
     val Background = Color(0xFF0B1220)
     val Surface = Color(0xFF16213A)
     val SurfaceFocused = Color(0xFF243459)
@@ -29,7 +48,7 @@ object Brand {
     val Error = Color(0xFFFF6B6B)
 }
 
-private val colors = darkColorScheme(
+private fun colors() = darkColorScheme(
     primary = Brand.Primary,
     onPrimary = Color.White,
     secondary = Brand.Accent,
@@ -50,6 +69,9 @@ fun TimokTheme(content: @Composable () -> Unit) {
     // "Display size" shrinks dp and sp alike, so layouts keep their proportions while taking less screen.
     val scale by AppPrefs.uiScale.collectAsState()
     val animations by AppPrefs.animations.collectAsState()
+    val accent by AppPrefs.accent.collectAsState()
+    // Written only when the choice changes; readers of Brand.Accent then redraw.
+    remember(accent) { Brand.setAccent(accent) }
     val density = LocalDensity.current
     CompositionLocalProvider(
         LocalDensity provides Density(density.density * scale, density.fontScale),
@@ -57,7 +79,7 @@ fun TimokTheme(content: @Composable () -> Unit) {
         LocalBringIntoViewSpec provides if (animations) QuickScroll else JumpScroll,
         LocalAnimations provides animations,
     ) {
-        MaterialTheme(colorScheme = colors, content = content)
+        MaterialTheme(colorScheme = remember(accent) { colors() }, content = content)
     }
 }
 

@@ -92,6 +92,10 @@ data class BackupSettings(
     val animations: Boolean = true,
     val panelTimeout: Int = 5,
     val listFullscreen: Int = 20,
+    val compactList: Boolean = false,
+    val streamBadges: Boolean = true,
+    val clockOverlay: Boolean = false,
+    val accent: String = "orange",
 )
 
 /** Per-account options that are not secrets. */
@@ -155,6 +159,10 @@ class BackupRepository @Inject constructor(
                 animations = AppPrefs.animations.value,
                 panelTimeout = AppPrefs.panelTimeout.value,
                 listFullscreen = AppPrefs.listFullscreen.value,
+                compactList = AppPrefs.compactList.value,
+                streamBadges = AppPrefs.streamBadges.value,
+                clockOverlay = AppPrefs.clockOverlay.value,
+                accent = AppPrefs.accent.value,
             ),
             account = BackupAccountSettings(p.streamFormat, p.userAgent, p.epgOffsetHours, p.epgUrl),
         )
@@ -227,6 +235,10 @@ class BackupRepository @Inject constructor(
         AppPrefs.setAnimations(context, s.animations)
         if (s.panelTimeout in AppPrefs.panelTimeouts) AppPrefs.setPanelTimeout(context, s.panelTimeout)
         if (s.listFullscreen in AppPrefs.listFullscreenDelays) AppPrefs.setListFullscreen(context, s.listFullscreen)
+        AppPrefs.setCompactList(context, s.compactList)
+        AppPrefs.setStreamBadges(context, s.streamBadges)
+        AppPrefs.setClockOverlay(context, s.clockOverlay)
+        AppPrefs.setAccent(context, s.accent)
         RestoreResult(matched.size, missing, file.watchlist.size, file.progress.size)
     }
 }

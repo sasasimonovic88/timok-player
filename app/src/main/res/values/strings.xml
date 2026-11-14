@@ -249,4 +249,16 @@
     <string name="nav_guide">TV guide</string>
     <string name="guide_starts_in">in %1$d min</string>
     <string name="guide_ended">ended</string>
+
+    <string name="settings_accent">Color</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_purple">Purple</string>
+    <string name="settings_compact_list">Compact channel list</string>
+    <string name="settings_compact_list_hint">Lower rows without the "next" line, so more channels fit</string>
+    <string name="settings_stream_badges">Stream details on the info bar</string>
+    <string name="settings_stream_badges_hint">Resolution, fps, codec and bitrate</string>
+    <string name="settings_clock_overlay">Clock while watching</string>
+    <string name="settings_clock_overlay_hint">Small clock in the corner of the picture</string>
 </resources>

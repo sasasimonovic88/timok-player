@@ -58,6 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import rs.timok.player.R
+import rs.timok.player.ui.components.WatchClock
 import rs.timok.player.player.PlaybackStatus
 import rs.timok.player.player.LivePlayer
 import rs.timok.player.ui.player.OptionsPanel
@@ -212,6 +213,8 @@ fun VodPlayerScreen(onExit: () -> Unit, vm: VodPlayerViewModel = hiltViewModel()
                     .padding(horizontal = 24.dp, vertical = 12.dp),
             )
         }
+
+        WatchClock(hidden = optionsVisible)
 
         AnimatedVisibility(
             visible = (controlsVisible || !playing) && !optionsVisible,

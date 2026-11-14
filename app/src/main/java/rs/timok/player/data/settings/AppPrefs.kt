@@ -20,6 +20,28 @@ object AppPrefs {
     private const val KEY_ANIMATIONS = "animations"
     private const val KEY_PANEL_TIMEOUT = "panel_timeout_s"
     private const val KEY_LIST_FULLSCREEN = "list_fullscreen_s"
+    private const val KEY_COMPACT_LIST = "compact_list"
+    private const val KEY_STREAM_BADGES = "stream_badges"
+    private const val KEY_CLOCK_OVERLAY = "clock_overlay"
+    private const val KEY_ACCENT = "accent"
+
+    /** Accent color choices (focus outline and highlights); the first is the brand orange. */
+    val accents = listOf("orange", "blue", "green", "purple")
+
+    private val _compactList = MutableStateFlow(false)
+    /** Lower channel rows without the "next" line, so more channels fit on screen. */
+    val compactList: StateFlow<Boolean> = _compactList
+
+    private val _streamBadges = MutableStateFlow(true)
+    /** Resolution, fps, codec and bitrate badges on the info bar. */
+    val streamBadges: StateFlow<Boolean> = _streamBadges
+
+    private val _clockOverlay = MutableStateFlow(false)
+    /** Small clock in the corner while watching. */
+    val clockOverlay: StateFlow<Boolean> = _clockOverlay
+
+    private val _accent = MutableStateFlow("orange")
+    val accent: StateFlow<String> = _accent
 
     /** Seconds the info bar stays up; the other panels scale with it (see [panelTimeoutMs]). */
     val panelTimeouts = listOf(3, 5, 10)
@@ -75,6 +97,31 @@ object AppPrefs {
         _animations.value = prefs(context).getBoolean(KEY_ANIMATIONS, true)
         _panelTimeout.value = prefs(context).getInt(KEY_PANEL_TIMEOUT, 5)
         _listFullscreen.value = prefs(context).getInt(KEY_LIST_FULLSCREEN, 20)
+        _compactList.value = prefs(context).getBoolean(KEY_COMPACT_LIST, false)
+        _streamBadges.value = prefs(context).getBoolean(KEY_STREAM_BADGES, true)
+        _clockOverlay.value = prefs(context).getBoolean(KEY_CLOCK_OVERLAY, false)
+        _accent.value = prefs(context).getString(KEY_ACCENT, null)?.takeIf { it in accents } ?: "orange"
+    }
+
+    fun setCompactList(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_COMPACT_LIST, enabled).apply()
+        _compactList.value = enabled
+    }
+
+    fun setStreamBadges(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_STREAM_BADGES, enabled).apply()
+        _streamBadges.value = enabled
+    }
+
+    fun setClockOverlay(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_CLOCK_OVERLAY, enabled).apply()
+        _clockOverlay.value = enabled
+    }
+
+    fun setAccent(context: Context, name: String) {
+        if (name !in accents) return
+        prefs(context).edit().putString(KEY_ACCENT, name).apply()
+        _accent.value = name
     }
 
     fun setAnimations(context: Context, enabled: Boolean) {

@@ -419,6 +419,10 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
     val animations by vm.animations.collectAsStateWithLifecycle()
     val panelTimeout by vm.panelTimeout.collectAsStateWithLifecycle()
     val listFullscreen by vm.listFullscreen.collectAsStateWithLifecycle()
+    val compactList by vm.compactList.collectAsStateWithLifecycle()
+    val streamBadges by vm.streamBadges.collectAsStateWithLifecycle()
+    val clockOverlay by vm.clockOverlay.collectAsStateWithLifecycle()
+    val accent by vm.accent.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     Column(Modifier.width(560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.settings_display_size), style = MaterialTheme.typography.titleMedium, color = Brand.TextPrimary)
@@ -441,6 +445,50 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
             valueActive = animations,
             onClick = vm::toggleAnimations,
             modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(
+            stringResource(R.string.settings_accent),
+            style = MaterialTheme.typography.titleMedium,
+            color = Brand.TextPrimary,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
+            AppPrefs.accents.forEach { name ->
+                Chip(
+                    text = "● " + stringResource(
+                        when (name) {
+                            "blue" -> R.string.accent_blue
+                            "green" -> R.string.accent_green
+                            "purple" -> R.string.accent_purple
+                            else -> R.string.accent_orange
+                        }
+                    ),
+                    selected = name == accent,
+                    onClick = { vm.setAccent(name) },
+                )
+            }
+        }
+        SettingRow(
+            title = stringResource(R.string.settings_compact_list),
+            hint = stringResource(R.string.settings_compact_list_hint),
+            value = onOff(compactList),
+            valueActive = compactList,
+            onClick = vm::toggleCompactList,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        SettingRow(
+            title = stringResource(R.string.settings_stream_badges),
+            hint = stringResource(R.string.settings_stream_badges_hint),
+            value = onOff(streamBadges),
+            valueActive = streamBadges,
+            onClick = vm::toggleStreamBadges,
+        )
+        SettingRow(
+            title = stringResource(R.string.settings_clock_overlay),
+            hint = stringResource(R.string.settings_clock_overlay_hint),
+            value = onOff(clockOverlay),
+            valueActive = clockOverlay,
+            onClick = vm::toggleClockOverlay,
         )
         Text(
             stringResource(R.string.settings_panel_timeout),
