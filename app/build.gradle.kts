@@ -23,8 +23,8 @@ android {
         applicationId = "rs.timok.player"
         minSdk = 23
         targetSdk = 36
-        versionCode = 15
-        versionName = "0.5.1"
+        versionCode = 16
+        versionName = "0.5.2"
         vectorDrawables.useSupportLibrary = true
     }
 
