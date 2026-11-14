@@ -73,15 +73,20 @@ object Routes {
     const val VOD_DETAILS = "vodDetails/{kind}/{id}"
     const val VOD_PLAYER = "vodPlay/{req}/{start}"
     const val PROGRAM = "program/{group}/{streamId}"
+    const val GUIDE = "guide/{group}?streamId={streamId}"
 
     /**
      * Menus where typing a channel number opens that channel. Not the players (they have their own entry or
      * none) and not screens with text fields (login, search, settings), where digits are typed text.
      */
-    val NUMBER_ENTRY = setOf(CHANNELS, VOD, VOD_DETAILS, ARCHIVE, PROGRAM)
+    val NUMBER_ENTRY = setOf(CHANNELS, VOD, VOD_DETAILS, ARCHIVE, PROGRAM, GUIDE)
+
+    /** Menus where the remote's GUIDE key opens the guide grid (the player handles it itself, the guide closes). */
+    val GUIDE_KEY = setOf(CHANNELS, VOD, VOD_DETAILS, ARCHIVE, PROGRAM, SEARCH, SETTINGS)
 
     fun player(group: String, streamId: Long) = "player/${Uri.encode(group)}/$streamId"
     fun program(group: String, streamId: Long) = "program/${Uri.encode(group)}/$streamId"
+    fun guide(group: String, streamId: Long?) = "guide/${Uri.encode(group)}?streamId=${streamId ?: -1}"
     fun archive(streamId: Long, name: String, logo: String?) =
         "archive/$streamId?name=${Uri.encode(name)}&logo=${Uri.encode(logo.orEmpty())}"
     fun vod(kind: VodKind) = "vod/${kind.name}"
@@ -96,8 +101,15 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
     var currentRoute by remember { mutableStateOf<String?>(null) }
     // OK that confirmed a number: its key-up must not also click the focused item.
     var swallowCenterUp by remember { mutableStateOf(false) }
+    // Set once the nav controller exists; the key handler sits outside the NavHost.
+    // A plain holder, not state: assigning it during composition must not trigger recomposition.
+    val openGuide = remember { GuideOpener() }
     Box(
         Modifier.fillMaxSize().onPreviewKeyEvent { e ->
+            if (e.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_GUIDE && currentRoute in Routes.GUIDE_KEY) {
+                if (e.type == KeyEventType.KeyDown) openGuide.action?.invoke()
+                return@onPreviewKeyEvent true
+            }
             if (currentRoute !in Routes.NUMBER_ENTRY) return@onPreviewKeyEvent false
             val code = e.nativeKeyEvent.keyCode
             val down = e.type == KeyEventType.KeyDown
@@ -130,6 +142,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
         val onNavigate: (NavDest) -> Unit = { dest ->
             when (dest) {
                 NavDest.TV -> nav.popBackStack(Routes.CHANNELS, inclusive = false)
+                NavDest.GUIDE -> openGuide.action?.invoke()
                 NavDest.MOVIES, NavDest.SERIES -> nav.navigate(Routes.vod(if (dest == NavDest.MOVIES) VodKind.MOVIE else VodKind.SERIES)) {
                     popUpTo(Routes.CHANNELS)
                     launchSingleTop = true
@@ -139,6 +152,13 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                     launchSingleTop = true
                 }
                 NavDest.SETTINGS -> nav.navigate(Routes.SETTINGS) { launchSingleTop = true }
+            }
+        }
+        openGuide.action = {
+            val (streamId, g) = playback.lastPlayed ?: (null to rs.timok.player.data.repo.GroupKey.Favorites)
+            nav.navigate(Routes.guide(g.key, streamId)) {
+                popUpTo(Routes.CHANNELS)
+                launchSingleTop = true
             }
         }
         val route = nav.currentBackStackEntryAsState().value?.destination?.route
@@ -165,7 +185,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
         LaunchedEffect(route) {
             when (route) {
                 Routes.VOD, Routes.VOD_DETAILS -> playback.pauseLiveForBrowse()
-                Routes.CHANNELS, Routes.SEARCH, Routes.PLAYER -> playback.resumeLiveAfterBrowse()
+                Routes.CHANNELS, Routes.SEARCH, Routes.PLAYER, Routes.GUIDE -> playback.resumeLiveAfterBrowse()
             }
         }
         // Animations on: the library default fade (700 ms); off: screens replace each other at once.
@@ -209,6 +229,23 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                         nav.navigate(Routes.player(group, streamId)) { popUpTo(Routes.CHANNELS) }
                     },
                     onPlayArchive = { request -> nav.navigate(Routes.vodPlayer(request, 0)) },
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
+                Routes.GUIDE,
+                arguments = listOf(
+                    navArgument("group") { type = NavType.StringType },
+                    navArgument("streamId") { type = NavType.LongType; defaultValue = -1L },
+                ),
+            ) {
+                rs.timok.player.ui.guide.GuideScreen(
+                    onWatch = { group, streamId ->
+                        instantPlayer = false
+                        nav.navigate(Routes.player(group, streamId)) { popUpTo(Routes.CHANNELS) }
+                    },
+                    onArchive = { request -> nav.navigate(Routes.vodPlayer(request, 0)) },
+                    onProgram = { group, streamId -> nav.navigate(Routes.program(group, streamId)) },
                     onBack = { nav.popBackStack() },
                 )
             }
@@ -261,6 +298,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                     },
                     onArchive = { id, name, logo -> nav.navigate(Routes.archive(id, name, logo)) },
                     onProgram = { group, streamId -> nav.navigate(Routes.program(group, streamId)) },
+                    onGuide = { group, streamId -> nav.navigate(Routes.guide(group, streamId)) },
                 )
             }
             composable(
@@ -302,6 +340,11 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
             mainViewModel.consumeStartChannel()
         }
     }
+}
+
+/** Opens the guide grid; filled in once the nav controller exists. */
+private class GuideOpener {
+    var action: (() -> Unit)? = null
 }
 
 @OptIn(UnstableApi::class)

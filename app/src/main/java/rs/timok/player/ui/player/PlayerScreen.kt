@@ -94,6 +94,7 @@ fun PlayerScreen(
     onExit: () -> Unit,
     onArchive: (streamId: Long, name: String, logo: String?) -> Unit,
     onProgram: (group: String, streamId: Long) -> Unit,
+    onGuide: (group: String, streamId: Long) -> Unit,
     vm: PlayerViewModel = hiltViewModel(),
 ) {
     val appContext = LocalContext.current
@@ -212,7 +213,12 @@ fun PlayerScreen(
                     in KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9 -> { vm.onDigit(code - KeyEvent.KEYCODE_NUMPAD_0, e.nativeKeyEvent.eventTime); true }
                     KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_DOWN, KeyEvent.KEYCODE_PAGE_DOWN -> { vm.zap(-1); true }
                     KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_UP, KeyEvent.KEYCODE_PAGE_UP -> { vm.zap(1); true }
-                    KeyEvent.KEYCODE_GUIDE, KeyEvent.KEYCODE_PROG_GREEN -> {
+                    // GUIDE opens the guide grid; green still opens this channel's own schedule.
+                    KeyEvent.KEYCODE_GUIDE -> {
+                        current?.let { onGuide(vm.groupKey, it.streamId) }
+                        true
+                    }
+                    KeyEvent.KEYCODE_PROG_GREEN -> {
                         current?.let { onProgram(vm.groupKey, it.streamId) }
                         true
                     }

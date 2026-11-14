@@ -159,6 +159,11 @@ class ChannelRepository @Inject constructor(
         if (epgChannelId == null) flow { emit(emptyList()) }
         else minuteTicker.flatMapLatest { now -> programDao.observeNowNext(playlistId, epgChannelId, now) }
 
+    /** Programmes per guide key for [keys] between [from] and [until], each list oldest first. */
+    suspend fun programsFor(playlistId: Long, keys: List<String>, from: Long, until: Long): Map<String, List<ProgramEntity>> =
+        if (keys.isEmpty()) emptyMap()
+        else keys.chunked(500).flatMap { programDao.forChannels(playlistId, it, from, until) }.groupBy { it.channelKey }
+
     /** Stored programmes of a channel (by its guide key) that end after [from], oldest first. */
     fun schedule(playlistId: Long, epgKey: String, from: Long): Flow<List<ProgramEntity>> =
         programDao.observeSchedule(playlistId, epgKey, from)

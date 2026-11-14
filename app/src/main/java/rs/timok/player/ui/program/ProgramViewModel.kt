@@ -20,8 +20,6 @@ import rs.timok.player.data.repo.ChannelRepository
 import rs.timok.player.data.repo.GroupKey
 import rs.timok.player.data.repo.PlaylistRepository
 import rs.timok.player.data.repo.VodPlayRequest
-import rs.timok.player.domain.ArchiveProgram
-import rs.timok.player.domain.VodKind
 import javax.inject.Inject
 
 sealed interface ScheduleState {
@@ -68,34 +66,12 @@ class ProgramViewModel @Inject constructor(
         }
     }
 
-    private var archiveCache: List<ArchiveProgram>? = null
+    private val catchup = CatchupFinder(playlists)
 
-    /**
-     * Catch-up request for a programme that already ran, or null when the server's archive does not have it.
-     * Timeshift URLs need the start in the server's own time zone, so the programme is looked up in the server's
-     * archive list by start time instead of converting the guide time.
-     */
+    /** Catch-up request for a programme that already ran, or null when the server's archive does not have it. */
     suspend fun archiveRequest(program: ProgramEntity): VodPlayRequest? {
         val row = _channel.value ?: return null
-        if (!row.hasArchive) return null
-        val archive = archiveCache ?: runCatching { playlists.archive(streamId) }.getOrNull()?.also { archiveCache = it } ?: return null
-        val match = archive
-            .filter { kotlin.math.abs(it.startMs - program.startMs) <= MATCH_WINDOW_MS }
-            .minByOrNull { kotlin.math.abs(it.startMs - program.startMs) + if (it.title.equals(program.title, true)) 0 else MATCH_WINDOW_MS }
-            ?: return null
-        val url = playlists.catchupUrl(streamId, match) ?: return null
-        return VodPlayRequest(
-            kind = VodKind.MOVIE,
-            itemId = streamId,
-            seriesId = null,
-            title = row.name,
-            poster = row.logo,
-            extension = "ts",
-            season = null,
-            episode = null,
-            episodeTitle = program.title,
-            url = url,
-        )
+        return catchup.request(row, program)
     }
 
     /** Sloppy guides repeat entries or overlap; keep one programme per start time, in order. */
@@ -112,7 +88,5 @@ class ProgramViewModel @Inject constructor(
     private companion object {
         /** The guide keeps about three hours of the past; show what is there. */
         const val PAST_MS = 3 * 60 * 60 * 1000L
-        /** Guide and archive starts of the same programme rarely differ by more than this. */
-        const val MATCH_WINDOW_MS = 10 * 60 * 1000L
     }
 }

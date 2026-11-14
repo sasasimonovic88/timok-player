@@ -31,7 +31,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import rs.timok.player.R
 
-enum class NavDest { SEARCH, TV, MOVIES, SERIES, SETTINGS }
+enum class NavDest { SEARCH, TV, GUIDE, MOVIES, SERIES, SETTINGS }
 
 /** Left menu shared by the top-level screens: icons only, expands with labels while it has focus. */
 @Composable
@@ -61,6 +61,7 @@ fun NavRail(
         val items = listOf(
             Triple(NavDest.SEARCH, R.drawable.ic_nav_search, R.string.nav_search),
             Triple(NavDest.TV, R.drawable.ic_nav_tv, R.string.nav_tv),
+            Triple(NavDest.GUIDE, R.drawable.ic_nav_guide, R.string.nav_guide),
             Triple(NavDest.MOVIES, R.drawable.ic_nav_movies, R.string.nav_movies),
             Triple(NavDest.SERIES, R.drawable.ic_nav_series, R.string.nav_series),
             Triple(NavDest.SETTINGS, R.drawable.ic_nav_settings, R.string.settings),

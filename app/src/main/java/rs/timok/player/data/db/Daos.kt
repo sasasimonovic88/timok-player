@@ -159,6 +159,13 @@ interface ProgramDao {
     @Query("SELECT * FROM programs WHERE playlistId = :playlistId AND channelKey = :channelKey AND endMs > :now ORDER BY startMs LIMIT 2")
     fun observeNowNext(playlistId: Long, channelKey: String, now: Long): Flow<List<ProgramEntity>>
 
+    /** Programmes of several channels between [from] and [until], for the guide grid. */
+    @Query(
+        "SELECT * FROM programs WHERE playlistId = :playlistId AND channelKey IN (:channelKeys) " +
+            "AND endMs > :from AND startMs < :until ORDER BY channelKey, startMs"
+    )
+    suspend fun forChannels(playlistId: Long, channelKeys: List<String>, from: Long, until: Long): List<ProgramEntity>
+
     /** Whole stored schedule of one channel from [from] on (the guide keeps a few days ahead). */
     @Query("SELECT * FROM programs WHERE playlistId = :playlistId AND channelKey = :channelKey AND endMs > :from ORDER BY startMs")
     fun observeSchedule(playlistId: Long, channelKey: String, from: Long): Flow<List<ProgramEntity>>

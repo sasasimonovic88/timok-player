@@ -240,4 +240,8 @@
     <string name="settings_seconds">%1$d s</string>
     <string name="settings_minutes">%1$d min</string>
     <string name="settings_never_option">Nie</string>
+
+    <string name="nav_guide">TV-Programm</string>
+    <string name="guide_starts_in">in %1$d min</string>
+    <string name="guide_ended">beendet</string>
 </resources>
