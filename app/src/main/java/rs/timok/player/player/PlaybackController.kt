@@ -103,11 +103,16 @@ class PlaybackController @Inject constructor(
         stop()
     }
 
-    /** Restarts the channel stopped by [pauseLiveForBrowse], if background video is on. */
+    /**
+     * Restarts the channel stopped by [pauseLiveForBrowse], if background video is on. A channel asked for in the
+     * meantime (e.g. a number typed on the movies screen) wins: the old one must not replace it.
+     */
     fun resumeLiveAfterBrowse() {
         val previous = pausedForBrowse ?: return
         pausedForBrowse = null
-        scope.launch { if (settings.backgroundPlayback.first()) play(previous.first, previous.second) }
+        scope.launch {
+            if (settings.backgroundPlayback.first() && _currentStreamId.value == null) play(previous.first, previous.second)
+        }
     }
 
     /** Last channel asked for and the group it was zapped in; kept after stop, for the channel list's focus. */
@@ -121,6 +126,8 @@ class PlaybackController @Inject constructor(
 
     /** Starts [streamId]; with [immediate] false, waits briefly so fast zapping opens only the last channel. */
     fun play(streamId: Long, group: GroupKey, immediate: Boolean = true) {
+        // An explicit channel replaces the one paused behind the movie screens.
+        pausedForBrowse = null
         _currentStreamId.value = streamId
         this.group = group
         lastPlayed = streamId to group

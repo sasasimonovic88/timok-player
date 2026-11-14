@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +26,8 @@ import rs.timok.player.data.db.PlaylistEntity
 import rs.timok.player.data.db.ProgramEntity
 import rs.timok.player.data.repo.ChannelRepository
 import rs.timok.player.data.repo.GroupKey
+import rs.timok.player.ui.ChannelNumberEntry
+import rs.timok.player.ui.NumberResult
 import rs.timok.player.data.repo.PlaylistRepository
 import rs.timok.player.player.ExternalPlayer
 import rs.timok.player.player.PlaybackController
@@ -75,8 +76,23 @@ class PlayerViewModel @Inject constructor(
         .flatMapLatest { (id, key) -> if (key == null) flowOf(emptyList()) else channelRepo.nowNext(id, key) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    private val _numberInput = MutableStateFlow("")
-    val numberInput: StateFlow<String> = _numberInput
+    /** Typed channel number; the rules are shared with the menus (see [ChannelNumberEntry]). */
+    private val numberEntry = ChannelNumberEntry(
+        scope = viewModelScope,
+        channels = channelRepo,
+        playlistId = { playlist.value?.id },
+        inCurrentGroup = { number -> channels.value.firstOrNull { it.number == number } },
+    ) { result ->
+        when (result) {
+            is NumberResult.Open -> {
+                result.group?.let { group.value = it }
+                selectChannel(result.streamId)
+            }
+            NumberResult.Previous -> previousChannel()
+            is NumberResult.NotFound -> showMessage(context.getString(R.string.channel_not_found, result.text))
+        }
+    }
+    val numberInput: StateFlow<String> = numberEntry.input
 
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
@@ -84,8 +100,6 @@ class PlayerViewModel @Inject constructor(
     /** Bumped on every channel change so the UI re-shows the info bar. */
     private val _zapCounter = MutableStateFlow(0)
     val zapCounter: StateFlow<Int> = _zapCounter
-
-    private var numberJob: Job? = null
 
     init {
         // A no-op when the channel is already playing in the background.
@@ -122,73 +136,10 @@ class PlayerViewModel @Inject constructor(
         playback.play(streamId, group.value)
     }
 
-    /** Event time of the previous digit and whether the current run of digits is a machine burst. */
-    private var lastDigitAt = 0L
-    private var digitBurst = false
+    fun onDigit(digit: Int, eventTimeMs: Long) = numberEntry.onDigit(digit, eventTimeMs)
 
-    /**
-     * Some air-mouse remotes inject several digits in the same millisecond (e.g. when switching to
-     * mouse mode). No person types that fast, so such a run is dropped instead of zapping to it.
-     */
-    fun onDigit(d: Int, eventTimeMs: Long) {
-        val gap = eventTimeMs - lastDigitAt
-        lastDigitAt = eventTimeMs
-        if (gap in 0 until BURST_GAP_MS) {
-            digitBurst = true
-            numberJob?.cancel()
-            _numberInput.value = ""
-            return
-        }
-        if (digitBurst && gap < BURST_COOLDOWN_MS) return
-        digitBurst = false
-        if (_numberInput.value.length >= 5) return
-        _numberInput.value += d.toString()
-        numberJob?.cancel()
-        numberJob = viewModelScope.launch {
-            delay(NUMBER_TIMEOUT_MS)
-            commitNumber()
-        }
-    }
-
-    /**
-     * Returns true when a number was pending (so OK is consumed by number entry).
-     * Numbers pick favorites first (by their manual position); beyond the favorites they are channel numbers.
-     */
-    fun commitNumber(): Boolean {
-        val text = _numberInput.value
-        if (text.isEmpty()) return false
-        numberJob?.cancel()
-        _numberInput.value = ""
-        val number = text.toIntOrNull() ?: return true
-        // Channel numbers never start with 0: a lone 0 goes back to the previous channel.
-        if (number == 0) {
-            previousChannel()
-            return true
-        }
-        val pid = playlist.value?.id ?: return true
-        viewModelScope.launch {
-            val favorite = channelRepo.channels(pid, GroupKey.Favorites).first().getOrNull(number - 1)
-            if (favorite != null) {
-                // Up/down then zaps through the favorites.
-                group.value = GroupKey.Favorites
-                selectChannel(favorite.streamId)
-                return@launch
-            }
-            val inGroup = channels.value.firstOrNull { it.number == number }
-            if (inGroup != null) {
-                selectChannel(inGroup.streamId)
-                return@launch
-            }
-            val channel = channelRepo.findByNumber(pid, number)
-            if (channel == null) {
-                showMessage(context.getString(R.string.channel_not_found, text))
-            } else {
-                group.value = GroupKey.All
-                selectChannel(channel.streamId)
-            }
-        }
-        return true
-    }
+    /** Returns true when a number was pending (so OK is consumed by number entry). */
+    fun commitNumber(): Boolean = numberEntry.commit()
 
     /** Back to the channel watched before this one (0 or the remote's "last channel" key). */
     fun previousChannel() {
@@ -272,9 +223,4 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    private companion object {
-        const val NUMBER_TIMEOUT_MS = 2_000L
-        const val BURST_GAP_MS = 40L
-        const val BURST_COOLDOWN_MS = 300L
-    }
 }
