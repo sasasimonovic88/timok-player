@@ -46,6 +46,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -185,12 +187,34 @@ fun TvTextField(
     onImeAction: () -> Unit = {},
     /** Opens the keyboard right away, e.g. on the search screen. */
     startEditing: Boolean = false,
+    /**
+     * Also run [onImeAction] when the field is left with the D-pad, not only on the keyboard's Done key.
+     * For settings fields: viewers often close the keyboard and move on without pressing Done.
+     */
+    commitOnLeave: Boolean = false,
 ) {
     var editing by remember { mutableStateOf(startEditing) }
     val fieldFocus = remember { FocusRequester() }
     val surfaceFocus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
-    LaunchedEffect(editing) { if (editing) fieldFocus.requestFocus() }
+    // Own text state so the cursor can be put at the end: TV keyboards cannot move it, and a cursor at the
+    // start makes typing prepend to the old text and Backspace delete nothing.
+    var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+    if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
+    LaunchedEffect(editing) {
+        if (editing) {
+            field = field.copy(selection = TextRange(field.text.length))
+            fieldFocus.requestFocus()
+        }
+    }
+    var dirty by remember { mutableStateOf(false) }
+    fun leave() {
+        editing = false
+        if (commitOnLeave && dirty) {
+            dirty = false
+            onImeAction()
+        }
+    }
 
     Surface(
         onClick = { editing = true },
@@ -211,8 +235,12 @@ fun TvTextField(
         Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Text(label, color = Brand.TextSecondary, fontSize = 13.sp)
             BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
+                value = field,
+                onValueChange = {
+                    if (it.text != field.text) dirty = true
+                    field = it
+                    if (it.text != value) onValueChange(it.text)
+                },
                 singleLine = true,
                 textStyle = TextStyle(color = Brand.TextPrimary, fontSize = 20.sp),
                 cursorBrush = SolidColor(Brand.Accent),
@@ -224,6 +252,7 @@ fun TvTextField(
                 ),
                 keyboardActions = KeyboardActions(onAny = {
                     editing = false
+                    dirty = false
                     surfaceFocus.requestFocus()
                     onImeAction()
                 }),
@@ -240,13 +269,13 @@ fun TvTextField(
                             else -> return@onPreviewKeyEvent false
                         }
                         if (event.type == KeyEventType.KeyDown) {
-                            editing = false
+                            leave()
                             if (!focusManager.moveFocus(direction)) surfaceFocus.requestFocus()
                         }
                         true
                     }
                     .focusProperties { canFocus = editing }
-                    .onFocusChanged { if (!it.isFocused && editing) editing = false },
+                    .onFocusChanged { if (!it.isFocused && editing) leave() },
             )
         }
     }

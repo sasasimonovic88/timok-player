@@ -259,6 +259,7 @@ private fun AccountSection(vm: SettingsViewModel, focus: FocusRequester) {
                 onImeAction = {
                     scope.launch { if (!vm.changeServer(server)) server = p.server }
                 },
+                commitOnLeave = true,
                 modifier = Modifier.width(760.dp).padding(top = 8.dp),
             )
             Text(stringResource(R.string.settings_server_hint), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
@@ -271,6 +272,7 @@ private fun AccountSection(vm: SettingsViewModel, focus: FocusRequester) {
                 keyboardType = KeyboardType.Uri,
                 imeAction = ImeAction.Done,
                 onImeAction = { vm.setEpgUrl(epgUrl) },
+                commitOnLeave = true,
                 modifier = Modifier.width(760.dp).padding(top = 8.dp),
             )
             Text(stringResource(R.string.settings_epg_url_hint), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
