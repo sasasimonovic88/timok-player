@@ -24,6 +24,13 @@ object AppPrefs {
     private const val KEY_STREAM_BADGES = "stream_badges"
     private const val KEY_CLOCK_OVERLAY = "clock_overlay"
     private const val KEY_ACCENT = "accent"
+    private const val KEY_SCREEN_MARGIN = "screen_margin_pct"
+
+    /** Percent of the screen kept free at each edge, for TVs that crop the picture (overscan). */
+    val screenMargins = listOf(0, 2, 4, 6)
+
+    private val _screenMargin = MutableStateFlow(0)
+    val screenMargin: StateFlow<Int> = _screenMargin
 
     /** Accent color choices (focus outline and highlights); the first is the brand orange. */
     val accents = listOf("orange", "blue", "green", "purple")
@@ -101,6 +108,13 @@ object AppPrefs {
         _streamBadges.value = prefs(context).getBoolean(KEY_STREAM_BADGES, true)
         _clockOverlay.value = prefs(context).getBoolean(KEY_CLOCK_OVERLAY, false)
         _accent.value = prefs(context).getString(KEY_ACCENT, null)?.takeIf { it in accents } ?: "orange"
+        _screenMargin.value = prefs(context).getInt(KEY_SCREEN_MARGIN, 0)
+    }
+
+    fun setScreenMargin(context: Context, percent: Int) {
+        if (percent !in screenMargins) return
+        prefs(context).edit().putInt(KEY_SCREEN_MARGIN, percent).apply()
+        _screenMargin.value = percent
     }
 
     fun setCompactList(context: Context, enabled: Boolean) {

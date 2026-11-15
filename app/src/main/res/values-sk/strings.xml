@@ -75,7 +75,7 @@
     <string name="options_subtitles_off">Vypnuté</string>
     <string name="options_track">Stopa %1$d</string>
     <string name="options_aspect">Formát obrazu: %1$s</string>
-    <string name="aspect_fit">Prispôsobiť</string>
+    <string name="aspect_fit">Originál</string>
     <string name="aspect_zoom">Priblížiť</string>
     <string name="aspect_stretch">Roztiahnuť</string>
     <string name="options_sleep">Časovač vypnutia: %1$s</string>
@@ -256,4 +256,10 @@
     <string name="settings_stream_badges_hint">Rozlíšenie, fps, kodek a dátový tok</string>
     <string name="settings_clock_overlay">Hodiny počas sledovania</string>
     <string name="settings_clock_overlay_hint">Malé hodiny v rohu obrazu</string>
+
+    <string name="aspect_16_9">16:9</string>
+    <string name="aspect_4_3">4:3</string>
+
+    <string name="settings_screen_margin">Okraj obrazovky</string>
+    <string name="settings_screen_margin_hint">Zvýš, ak sú menu alebo info lišta na okrajoch TV orezané</string>
 </resources>

@@ -75,7 +75,7 @@
     <string name="options_subtitles_off">Isključeni</string>
     <string name="options_track">Traka %1$d</string>
     <string name="options_aspect">Format slike: %1$s</string>
-    <string name="aspect_fit">Prilagodi</string>
+    <string name="aspect_fit">Original</string>
     <string name="aspect_zoom">Popuni (zoom)</string>
     <string name="aspect_stretch">Razvuci</string>
     <string name="options_sleep">Tajmer za gašenje: %1$s</string>
@@ -256,4 +256,10 @@
     <string name="settings_stream_badges_hint">Rezolucija, fps, kodek i protok</string>
     <string name="settings_clock_overlay">Sat tokom gledanja</string>
     <string name="settings_clock_overlay_hint">Mali sat u uglu slike</string>
+
+    <string name="aspect_16_9">16:9</string>
+    <string name="aspect_4_3">4:3</string>
+
+    <string name="settings_screen_margin">Margina ekrana</string>
+    <string name="settings_screen_margin_hint">Povećaj ako su meni ili info traka odsečeni na ivicama TV-a</string>
 </resources>

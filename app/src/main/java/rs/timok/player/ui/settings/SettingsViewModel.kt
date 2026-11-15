@@ -149,6 +149,9 @@ class SettingsViewModel @Inject constructor(
     val clockOverlay: StateFlow<Boolean> = AppPrefs.clockOverlay
     fun toggleClockOverlay() = AppPrefs.setClockOverlay(context, !AppPrefs.clockOverlay.value)
 
+    val screenMargin: StateFlow<Int> = AppPrefs.screenMargin
+    fun setScreenMargin(percent: Int) = AppPrefs.setScreenMargin(context, percent)
+
     val accent: StateFlow<String> = AppPrefs.accent
     fun setAccent(name: String) = AppPrefs.setAccent(context, name)
 

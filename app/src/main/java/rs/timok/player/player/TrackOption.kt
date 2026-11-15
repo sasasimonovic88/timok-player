@@ -42,5 +42,25 @@ data class TrackOption(
     }
 }
 
-/** Picture format, mapped to PlayerView resize modes. */
-enum class AspectMode { FIT, ZOOM, STRETCH }
+/**
+ * Picture format. FIT/ZOOM/STRETCH only differ when the video's shape differs from the screen's, so 16:9 video on
+ * a 16:9 TV looks the same in all three; the forced 16:9 and 4:3 shapes always change the picture.
+ */
+enum class AspectMode {
+    FIT, RATIO_16_9, RATIO_4_3, ZOOM, STRETCH;
+
+    /** Shape the picture is forced into (inside the screen), or null to follow the video. */
+    val forcedRatio: Float? get() = when (this) {
+        RATIO_16_9 -> 16f / 9f
+        RATIO_4_3 -> 4f / 3f
+        else -> null
+    }
+
+    val label: Int get() = when (this) {
+        FIT -> rs.timok.player.R.string.aspect_fit
+        RATIO_16_9 -> rs.timok.player.R.string.aspect_16_9
+        RATIO_4_3 -> rs.timok.player.R.string.aspect_4_3
+        ZOOM -> rs.timok.player.R.string.aspect_zoom
+        STRETCH -> rs.timok.player.R.string.aspect_stretch
+    }
+}

@@ -75,7 +75,7 @@
     <string name="options_subtitles_off">Aus</string>
     <string name="options_track">Spur %1$d</string>
     <string name="options_aspect">Bildformat: %1$s</string>
-    <string name="aspect_fit">Einpassen</string>
+    <string name="aspect_fit">Original</string>
     <string name="aspect_zoom">Zoom</string>
     <string name="aspect_stretch">Strecken</string>
     <string name="options_sleep">Sleep-Timer: %1$s</string>
@@ -256,4 +256,10 @@
     <string name="settings_stream_badges_hint">Auflösung, fps, Codec und Bitrate</string>
     <string name="settings_clock_overlay">Uhr beim Ansehen</string>
     <string name="settings_clock_overlay_hint">Kleine Uhr in der Bildecke</string>
+
+    <string name="aspect_16_9">16:9</string>
+    <string name="aspect_4_3">4:3</string>
+
+    <string name="settings_screen_margin">Bildschirmrand</string>
+    <string name="settings_screen_margin_hint">Erhöhen, wenn Menüs oder die Infoleiste an den Rändern des TV abgeschnitten sind</string>
 </resources>

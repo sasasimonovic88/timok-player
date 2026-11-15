@@ -69,13 +69,7 @@ internal fun OptionsPanel(
     }
     val audio = tracks.filter { it.type == C.TRACK_TYPE_AUDIO }
     val subtitles = tracks.filter { it.type == C.TRACK_TYPE_TEXT }
-    val aspectLabel = stringResource(
-        when (aspect) {
-            AspectMode.FIT -> R.string.aspect_fit
-            AspectMode.ZOOM -> R.string.aspect_zoom
-            AspectMode.STRETCH -> R.string.aspect_stretch
-        }
-    )
+    val aspectLabel = stringResource(aspect.label)
 
     LazyColumn(
         modifier

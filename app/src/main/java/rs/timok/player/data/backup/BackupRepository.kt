@@ -96,6 +96,7 @@ data class BackupSettings(
     val streamBadges: Boolean = true,
     val clockOverlay: Boolean = false,
     val accent: String = "orange",
+    val screenMargin: Int = 0,
 )
 
 /** Per-account options that are not secrets. */
@@ -163,6 +164,7 @@ class BackupRepository @Inject constructor(
                 streamBadges = AppPrefs.streamBadges.value,
                 clockOverlay = AppPrefs.clockOverlay.value,
                 accent = AppPrefs.accent.value,
+                screenMargin = AppPrefs.screenMargin.value,
             ),
             account = BackupAccountSettings(p.streamFormat, p.userAgent, p.epgOffsetHours, p.epgUrl),
         )
@@ -239,6 +241,7 @@ class BackupRepository @Inject constructor(
         AppPrefs.setStreamBadges(context, s.streamBadges)
         AppPrefs.setClockOverlay(context, s.clockOverlay)
         AppPrefs.setAccent(context, s.accent)
+        AppPrefs.setScreenMargin(context, s.screenMargin)
         RestoreResult(matched.size, missing, file.watchlist.size, file.progress.size)
     }
 }

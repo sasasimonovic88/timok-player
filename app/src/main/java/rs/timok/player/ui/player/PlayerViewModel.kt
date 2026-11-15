@@ -171,12 +171,7 @@ class PlayerViewModel @Inject constructor(
     /** Blue key: next picture format, named on screen. */
     fun cycleAspectWithMessage() {
         cycleAspect()
-        val name = when (aspect.value) {
-            rs.timok.player.player.AspectMode.FIT -> R.string.aspect_fit
-            rs.timok.player.player.AspectMode.ZOOM -> R.string.aspect_zoom
-            rs.timok.player.player.AspectMode.STRETCH -> R.string.aspect_stretch
-        }
-        showMessage(context.getString(name))
+        showMessage(context.getString(aspect.value.label))
     }
 
     fun toggleFavorite() {

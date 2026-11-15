@@ -425,6 +425,7 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
     val streamBadges by vm.streamBadges.collectAsStateWithLifecycle()
     val clockOverlay by vm.clockOverlay.collectAsStateWithLifecycle()
     val accent by vm.accent.collectAsStateWithLifecycle()
+    val screenMargin by vm.screenMargin.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     Column(Modifier.width(560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.settings_display_size), style = MaterialTheme.typography.titleMedium, color = Brand.TextPrimary)
@@ -438,6 +439,18 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
                     onClick = { vm.setUiScale(scale) },
                     modifier = if (selected) Modifier.focusRequester(focus) else Modifier,
                 )
+            }
+        }
+        Text(
+            stringResource(R.string.settings_screen_margin),
+            style = MaterialTheme.typography.titleMedium,
+            color = Brand.TextPrimary,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Text(stringResource(R.string.settings_screen_margin_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
+            AppPrefs.screenMargins.forEach { pct ->
+                Chip(text = "$pct%", selected = pct == screenMargin, onClick = { vm.setScreenMargin(pct) })
             }
         }
         SettingRow(

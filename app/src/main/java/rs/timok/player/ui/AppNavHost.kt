@@ -3,6 +3,8 @@ package rs.timok.player.ui
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -190,7 +192,16 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
         }
         // Animations on: the library default fade (700 ms); off: screens replace each other at once.
         val animate = rs.timok.player.ui.theme.LocalAnimations.current
+        // TVs that crop the picture edges (overscan) hide menus and the info bar; the margin moves all screens in.
+        // The video itself stays full screen behind them.
+        val margin by rs.timok.player.data.settings.AppPrefs.screenMargin.collectAsStateWithLifecycle()
+        val cfg = androidx.compose.ui.platform.LocalConfiguration.current
+        val scale = rs.timok.player.data.settings.AppPrefs.uiScale.collectAsStateWithLifecycle().value
         NavHost(
+            modifier = Modifier.padding(
+                horizontal = (cfg.screenWidthDp / scale * margin / 100f).dp,
+                vertical = (cfg.screenHeightDp / scale * margin / 100f).dp,
+            ),
             navController = nav,
             startDestination = startRoute,
             enterTransition = { if (animate) fadeIn(androidx.compose.animation.core.tween(700)) else EnterTransition.None },
@@ -356,6 +367,9 @@ private fun VideoBackground(playback: PlaybackController) {
     val useTexture = texture ?: return
     // A new view per surface type; the old one detaches the player in onRelease.
     key(useTexture) {
+    // Forced 16:9 / 4:3: the view is given that shape (centered, black around it) and fills it.
+    val ratio = aspect.forcedRatio
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     AndroidView(
         factory = { ctx ->
             val layout = if (useTexture) R.layout.player_view_texture else R.layout.player_view_surface
@@ -377,11 +391,12 @@ private fun VideoBackground(playback: PlaybackController) {
             it.resizeMode = when (aspect) {
                 AspectMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
                 AspectMode.ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                AspectMode.STRETCH -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                AspectMode.STRETCH, AspectMode.RATIO_16_9, AspectMode.RATIO_4_3 -> AspectRatioFrameLayout.RESIZE_MODE_FILL
             }
         },
         onRelease = { it.player = null },
-        modifier = Modifier.fillMaxSize(),
+        modifier = if (ratio != null) Modifier.fillMaxHeight().aspectRatio(ratio, matchHeightConstraintsFirst = true) else Modifier.fillMaxSize(),
     )
+    }
     }
 }
