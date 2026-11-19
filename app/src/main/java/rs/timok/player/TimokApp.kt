@@ -25,6 +25,8 @@ class TimokApp : Application(), Configuration.Provider, SingletonImageLoader.Fac
 
     override fun onCreate() {
         super.onCreate()
+        // First, so a crash during start-up is recorded too.
+        rs.timok.player.data.log.ErrorLog.init(this)
         AppPrefs.init(this)
         RefreshWorker.schedule(this)
     }

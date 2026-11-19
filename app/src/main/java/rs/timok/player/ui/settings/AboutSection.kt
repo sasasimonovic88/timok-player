@@ -63,6 +63,7 @@ import rs.timok.player.ui.theme.Brand
 @Composable
 fun AboutSection(focus: FocusRequester, updateVm: rs.timok.player.ui.update.UpdateViewModel = androidx.hilt.navigation.compose.hiltViewModel()) {
     var showLicenses by remember { mutableStateOf(false) }
+    var showErrors by remember { mutableStateOf(false) }
     val updates = updateVm.updates
     val updateState by updates.state.collectAsStateWithLifecycle()
     // Scrolls if a larger display size pushes the text off screen; the scroll container also lets the
@@ -117,9 +118,15 @@ fun AboutSection(focus: FocusRequester, updateVm: rs.timok.player.ui.update.Upda
                 onClick = { showLicenses = true },
                 modifier = if (updates.enabled) Modifier else Modifier.focusRequester(focus),
             )
+            val errorCount by rs.timok.player.data.log.ErrorLog.count.collectAsStateWithLifecycle()
+            AboutButton(
+                text = stringResource(R.string.error_log_button, errorCount),
+                onClick = { showErrors = true },
+            )
         }
     }
     if (showLicenses) LicensesDialog(onDismiss = { showLicenses = false })
+    if (showErrors) ErrorLogDialog(onDismiss = { showErrors = false })
 }
 
 /**

@@ -263,4 +263,13 @@
     <string name="settings_screen_margin">Okraj obrazovky</string>
     <string name="settings_screen_margin_hint">Zvýš, ak sú menu alebo info lišta na okrajoch TV orezané</string>
     <string name="sleep_hint">Zastaví prehrávanie a nechá box uspať. TV sa vypne, ak to box a TV podporujú (HDMI-CEC).</string>
+
+    <string name="error_log_button">Denník chýb (%1$d)</string>
+    <string name="error_log_title">Denník chýb</string>
+    <string name="error_log_hint">Pády a problémy s prehrávaním, uložené len v tomto zariadení, bez používateľského mena a hesla. Ulož do súboru a pošli podpore.</string>
+    <string name="error_log_empty">Žiadne zaznamenané chyby.</string>
+    <string name="error_log_save">Uložiť do súboru</string>
+    <string name="error_log_clear">Vymazať</string>
+    <string name="error_log_close">Zavrieť</string>
+    <string name="error_log_saved">Denník chýb bol uložený.</string>
 </resources>

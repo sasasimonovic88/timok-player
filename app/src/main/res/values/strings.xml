@@ -268,4 +268,13 @@
     <string name="settings_screen_margin">Screen edge margin</string>
     <string name="settings_screen_margin_hint">Raise it if menus or the info bar are cut off at the edges of your TV</string>
     <string name="sleep_hint">Stops playback and lets the box go to sleep. The TV turns off too if the box and TV support it (HDMI-CEC).</string>
+
+    <string name="error_log_button">Error log (%1$d)</string>
+    <string name="error_log_title">Error log</string>
+    <string name="error_log_hint">Crashes and playback problems, kept only on this device and without username or password. Save it to a file to send to support.</string>
+    <string name="error_log_empty">No errors recorded.</string>
+    <string name="error_log_save">Save to file</string>
+    <string name="error_log_clear">Clear</string>
+    <string name="error_log_close">Close</string>
+    <string name="error_log_saved">Error log saved.</string>
 </resources>

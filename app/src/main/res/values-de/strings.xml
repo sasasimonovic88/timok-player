@@ -263,4 +263,13 @@
     <string name="settings_screen_margin">Bildschirmrand</string>
     <string name="settings_screen_margin_hint">Erhöhen, wenn Menüs oder die Infoleiste an den Rändern des TV abgeschnitten sind</string>
     <string name="sleep_hint">Beendet die Wiedergabe und lässt die Box schlafen. Der TV schaltet sich ab, wenn Box und TV das unterstützen (HDMI-CEC).</string>
+
+    <string name="error_log_button">Fehlerprotokoll (%1$d)</string>
+    <string name="error_log_title">Fehlerprotokoll</string>
+    <string name="error_log_hint">Abstürze und Wiedergabeprobleme, nur auf diesem Gerät gespeichert, ohne Benutzername und Passwort. In eine Datei speichern, um es dem Support zu senden.</string>
+    <string name="error_log_empty">Keine Fehler aufgezeichnet.</string>
+    <string name="error_log_save">In Datei speichern</string>
+    <string name="error_log_clear">Löschen</string>
+    <string name="error_log_close">Schließen</string>
+    <string name="error_log_saved">Fehlerprotokoll gespeichert.</string>
 </resources>

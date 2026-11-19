@@ -27,6 +27,7 @@ import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.util.EventLogger
 import rs.timok.player.BuildConfig
+import rs.timok.player.data.log.ErrorLog
 import androidx.media3.exoplayer.source.LoadEventInfo
 import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -202,6 +203,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         val renderedFps = totalRendered.toFloat() / DROP_WINDOW_S
         if (total > 0 && totalDropped >= total * DROP_RATIO && renderedFps < MAX_CHOPPY_FPS) {
             Log.w(TAG, "Decoder falling behind: $totalDropped of $total frames dropped in ${DROP_WINDOW_S}s")
+            ErrorLog.event("DECODER", "Slow decoding: $totalDropped of $total frames dropped in ${DROP_WINDOW_S}s (${_streamInfo.value.width}x${_streamInfo.value.height} ${_streamInfo.value.videoCodec.orEmpty()})\n${currentUrlForLog()}")
             _slowDecoding.value = true
         }
     }
@@ -239,7 +241,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         if (!everReady) urls.getOrNull(urlIndex)?.let(::probe)
         if (!live && !everReady) {
             player.stop()
-            _status.value = PlaybackStatus.Failed("timeout")
+            fail("timeout")
         } else {
             scheduleRetry("stall")
         }
@@ -305,7 +307,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
                         mainHandler.removeCallbacks(retryRunnable)
                         mainHandler.removeCallbacks(stallRunnable)
                         player.stop()
-                        _status.value = PlaybackStatus.Failed(reason)
+                        fail(reason)
                         return
                     }
                 }
@@ -329,6 +331,10 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
 
             override fun onPlayerError(error: PlaybackException) {
                 Log.w(TAG, "Playback error ${error.errorCodeName}", error)
+                // Once per error type and item, so reconnect loops do not flood the log.
+                if (loggedErrors.add(error.errorCode)) {
+                    ErrorLog.event("PLAYBACK", "${error.errorCodeName}: ${error.cause?.message ?: error.message}\n${currentUrlForLog()}")
+                }
                 if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                     player.seekToDefaultPosition()
                     player.prepare()
@@ -348,7 +354,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
                     if (!live || sourceErrors >= MAX_SOURCE_ERRORS) {
                         mainHandler.removeCallbacks(stallRunnable)
                         player.stop()
-                        _status.value = PlaybackStatus.Failed(REASON_SOURCE)
+                        fail(REASON_SOURCE)
                         return
                     }
                 }
@@ -372,6 +378,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         startedAt = SystemClock.elapsedRealtime()
         everReady = false
         sourceErrors = 0
+        loggedErrors.clear()
         // Close the old connection before opening a new one.
         player.stop()
         player.clearMediaItems()
@@ -481,7 +488,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         mainHandler.removeCallbacks(stallRunnable)
         attempt++
         if (attempt > MAX_ATTEMPTS) {
-            _status.value = PlaybackStatus.Failed(reason ?: "stream ended")
+            fail(reason ?: "stream ended")
             return
         }
         _status.value = PlaybackStatus.Reconnecting(attempt)
@@ -557,6 +564,17 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
                     "support=${Util.getFormatSupportString(group.getTrackSupport(i))} selected=${group.isTrackSelected(i)}")
             }
         }
+    }
+
+    /** Error codes already logged for the current item. */
+    private val loggedErrors = HashSet<Int>()
+
+    private fun currentUrlForLog(): String = urls.getOrNull(urlIndex)?.let(::redact).orEmpty()
+
+    /** Gives up on the current item: shows [reason] and records it in the support log. */
+    private fun fail(reason: String) {
+        _status.value = PlaybackStatus.Failed(reason)
+        ErrorLog.event("FAILED", "${if (live) "Live" else "VOD"}: $reason\n${currentUrlForLog()}")
     }
 
     private fun redact(url: String) = url.replace(CREDENTIALS_PATH, "/$1/***/***/")

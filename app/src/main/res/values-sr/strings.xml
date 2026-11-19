@@ -263,4 +263,13 @@
     <string name="settings_screen_margin">Margina ekrana</string>
     <string name="settings_screen_margin_hint">Povećaj ako su meni ili info traka odsečeni na ivicama TV-a</string>
     <string name="sleep_hint">Zaustavlja reprodukciju i pušta box da se uspava. TV se gasi ako to box i TV podržavaju (HDMI-CEC).</string>
+
+    <string name="error_log_button">Dnevnik grešaka (%1$d)</string>
+    <string name="error_log_title">Dnevnik grešaka</string>
+    <string name="error_log_hint">Padovi i problemi sa reprodukcijom, čuvaju se samo na ovom uređaju, bez korisničkog imena i lozinke. Sačuvaj u fajl da pošalješ podršci.</string>
+    <string name="error_log_empty">Nema zabeleženih grešaka.</string>
+    <string name="error_log_save">Sačuvaj u fajl</string>
+    <string name="error_log_clear">Obriši</string>
+    <string name="error_log_close">Zatvori</string>
+    <string name="error_log_saved">Dnevnik grešaka je sačuvan.</string>
 </resources>
