@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.background
 
 @Composable
-fun Clock(modifier: Modifier = Modifier, color: Color = Color.Unspecified) {
+fun Clock(modifier: Modifier = Modifier, color: Color = Color.Unspecified, large: Boolean = false) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -33,7 +33,12 @@ fun Clock(modifier: Modifier = Modifier, color: Color = Color.Unspecified) {
     }
     val context = LocalContext.current
     val fmt = remember { android.text.format.DateFormat.getTimeFormat(context) }
-    Text(fmt.format(Date(now)), modifier = modifier, color = color, style = MaterialTheme.typography.titleMedium)
+    Text(
+        fmt.format(Date(now)),
+        modifier = modifier,
+        color = color,
+        style = if (large) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+    )
 }
 
 /** Formats an epoch time as a short local time (respects the device 12/24h setting). */

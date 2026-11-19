@@ -34,6 +34,7 @@ class ProgramViewModel @Inject constructor(
     savedState: SavedStateHandle,
     private val playlists: PlaylistRepository,
     private val channels: ChannelRepository,
+    private val reminderManager: rs.timok.player.data.reminder.ReminderManager,
 ) : ViewModel() {
 
     val streamId: Long = savedState.get<Long>("streamId") ?: 0
@@ -42,6 +43,18 @@ class ProgramViewModel @Inject constructor(
 
     private val _channel = MutableStateFlow<ChannelRow?>(null)
     val channel: StateFlow<ChannelRow?> = _channel
+
+    /** Start times of this channel's programmes that have a reminder. */
+    val reminderStarts: StateFlow<Set<Long>> = reminderManager.reminders
+        .map { list -> list.filter { it.streamId == streamId }.mapTo(HashSet()) { it.startMs } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Sets or removes the reminder for a future [program]; returns true when it is now set. */
+    fun toggleReminder(program: ProgramEntity): Boolean {
+        val name = _channel.value?.name.orEmpty()
+        return reminderManager.toggle(rs.timok.player.data.reminder.Reminder(streamId, groupKey, name, program.title, program.startMs))
+    }
+
 
     /** Fixed when the screen opens, so the list does not jump while it is being read. */
     private val from = System.currentTimeMillis() - PAST_MS

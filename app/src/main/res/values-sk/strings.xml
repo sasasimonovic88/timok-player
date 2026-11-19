@@ -272,4 +272,16 @@
     <string name="error_log_clear">Vymazať</string>
     <string name="error_log_close">Zavrieť</string>
     <string name="error_log_saved">Denník chýb bol uložený.</string>
+
+    <string name="reminder_add">Pripomenúť</string>
+    <string name="reminder_remove">Zrušiť pripomienku</string>
+    <string name="reminder_set">Pripomienka nastavená: %1$s</string>
+    <string name="reminder_set_short">Pripomienka nastavená</string>
+    <string name="reminder_removed">Pripomienka zrušená</string>
+    <string name="reminder_starts">Začína o %1$s</string>
+    <string name="reminder_watch">Pozerať</string>
+
+    <plurals name="channel_count"><item quantity="one">%d kanál</item><item quantity="few">%d kanály</item><item quantity="other">%d kanálov</item></plurals>
+    <plurals name="movie_count"><item quantity="one">%d film</item><item quantity="few">%d filmy</item><item quantity="other">%d filmov</item></plurals>
+    <plurals name="series_count"><item quantity="one">%d seriál</item><item quantity="few">%d seriály</item><item quantity="other">%d seriálov</item></plurals>
 </resources>

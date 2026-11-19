@@ -26,6 +26,8 @@ class MainViewModel @Inject constructor(
     /** Self-update (sideload build); its dialog is shown above every screen. */
     val updates: rs.timok.player.data.update.UpdateManager,
     private val playback: rs.timok.player.player.PlaybackController,
+    /** Programme reminders; their prompt is shown above every screen. */
+    val reminders: rs.timok.player.data.reminder.ReminderManager,
 ) : ViewModel() {
 
     /** Null while deciding; the splash screen stays up until then. */

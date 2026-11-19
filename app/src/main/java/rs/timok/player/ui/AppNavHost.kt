@@ -327,6 +327,18 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
             }
         }
         rs.timok.player.ui.update.UpdateDialog(mainViewModel.updates)
+        val dueReminder by mainViewModel.reminders.due.collectAsStateWithLifecycle()
+        dueReminder?.let { r ->
+            ReminderPopup(
+                reminder = r,
+                onWatch = {
+                    mainViewModel.reminders.dismissDue()
+                    instantPlayer = false
+                    nav.navigate(Routes.player(r.groupKey, r.streamId)) { popUpTo(Routes.CHANNELS) }
+                },
+                onDismiss = mainViewModel.reminders::dismissDue,
+            )
+        }
         if (numberInput.isNotEmpty() && route in Routes.NUMBER_ENTRY) {
             // Same look as the number in the fullscreen player.
             Text(

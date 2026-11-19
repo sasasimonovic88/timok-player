@@ -277,4 +277,16 @@
     <string name="error_log_clear">Clear</string>
     <string name="error_log_close">Close</string>
     <string name="error_log_saved">Error log saved.</string>
+
+    <string name="reminder_add">Remind me</string>
+    <string name="reminder_remove">Remove reminder</string>
+    <string name="reminder_set">Reminder set: %1$s</string>
+    <string name="reminder_set_short">Reminder set</string>
+    <string name="reminder_removed">Reminder removed</string>
+    <string name="reminder_starts">Starts at %1$s</string>
+    <string name="reminder_watch">Watch</string>
+
+    <plurals name="channel_count"><item quantity="one">%d channel</item><item quantity="other">%d channels</item></plurals>
+    <plurals name="movie_count"><item quantity="one">%d movie</item><item quantity="other">%d movies</item></plurals>
+    <plurals name="series_count"><item quantity="one">%d series</item><item quantity="other">%d series</item></plurals>
 </resources>

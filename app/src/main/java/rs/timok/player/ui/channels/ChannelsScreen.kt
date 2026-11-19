@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -223,9 +224,14 @@ fun ChannelsScreen(
                     )
                     when {
                         refreshing -> Text(stringResource(R.string.refreshing), color = Brand.TextSecondary)
-                        rows != null && move == null -> Text(rows!!.size.toString(), color = Brand.TextSecondary)
+                        rows != null && move == null ->
+                            Text(pluralStringResource(R.plurals.channel_count, rows!!.size, rows!!.size), color = Brand.TextSecondary)
                     }
-                    Clock(color = Brand.TextSecondary, modifier = Modifier.padding(start = 20.dp))
+                    // A divider and a larger, brighter clock, so the time is not read as part of the count.
+                    androidx.compose.foundation.layout.Box(
+                        Modifier.padding(horizontal = 18.dp).width(1.dp).height(28.dp).background(Brand.TextSecondary.copy(alpha = 0.4f)),
+                    )
+                    Clock(color = Brand.TextPrimary, large = true)
                 }
                 when {
                     list == null -> Text(

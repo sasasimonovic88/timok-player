@@ -272,4 +272,16 @@
     <string name="error_log_clear">Löschen</string>
     <string name="error_log_close">Schließen</string>
     <string name="error_log_saved">Fehlerprotokoll gespeichert.</string>
+
+    <string name="reminder_add">Erinnern</string>
+    <string name="reminder_remove">Erinnerung entfernen</string>
+    <string name="reminder_set">Erinnerung gesetzt: %1$s</string>
+    <string name="reminder_set_short">Erinnerung gesetzt</string>
+    <string name="reminder_removed">Erinnerung entfernt</string>
+    <string name="reminder_starts">Beginnt um %1$s</string>
+    <string name="reminder_watch">Ansehen</string>
+
+    <plurals name="channel_count"><item quantity="one">%d Sender</item><item quantity="other">%d Sender</item></plurals>
+    <plurals name="movie_count"><item quantity="one">%d Film</item><item quantity="other">%d Filme</item></plurals>
+    <plurals name="series_count"><item quantity="one">%d Serie</item><item quantity="other">%d Serien</item></plurals>
 </resources>

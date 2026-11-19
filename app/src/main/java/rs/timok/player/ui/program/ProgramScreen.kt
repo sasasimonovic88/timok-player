@@ -73,6 +73,9 @@ fun ProgramScreen(
     val channel by vm.channel.collectAsStateWithLifecycle()
     val schedule by vm.schedule.collectAsStateWithLifecycle()
     val now by vm.now.collectAsStateWithLifecycle()
+    val reminderStarts by vm.reminderStarts.collectAsStateWithLifecycle()
+    val reminderSetText = stringResource(R.string.reminder_set_short)
+    val reminderRemovedText = stringResource(R.string.reminder_removed)
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val context = LocalContext.current
     val notInArchive = stringResource(R.string.program_not_in_archive)
@@ -118,7 +121,7 @@ fun ProgramScreen(
                     Hint(stringResource(R.string.program_empty))
                 } else {
                     val hasArchive = channel?.hasArchive == true
-                    Schedule(s.programs, now, hasArchive) { program ->
+                    Schedule(s.programs, now, hasArchive, reminderStarts) { program ->
                         // A programme that already ran plays from the archive (channels that have one); else live.
                         if (hasArchive && program.endMs <= System.currentTimeMillis()) {
                             scope.launch {
@@ -126,6 +129,10 @@ fun ProgramScreen(
                                 if (request != null) onPlayArchive(request)
                                 else android.widget.Toast.makeText(context, notInArchive, android.widget.Toast.LENGTH_SHORT).show()
                             }
+                        } else if (program.startMs > System.currentTimeMillis()) {
+                            // A programme that has not started yet: OK sets or removes a reminder.
+                            val set = vm.toggleReminder(program)
+                            android.widget.Toast.makeText(context, if (set) reminderSetText else reminderRemovedText, android.widget.Toast.LENGTH_SHORT).show()
                         } else {
                             onWatch(vm.groupKey, vm.streamId)
                         }
@@ -142,7 +149,7 @@ private sealed interface ScheduleRow {
 }
 
 @Composable
-private fun Schedule(programs: List<ProgramEntity>, now: Long, hasArchive: Boolean, onClick: (ProgramEntity) -> Unit) {
+private fun Schedule(programs: List<ProgramEntity>, now: Long, hasArchive: Boolean, reminderStarts: Set<Long>, onClick: (ProgramEntity) -> Unit) {
     val context = LocalContext.current
     val today = stringResource(R.string.archive_today)
     val tomorrow = stringResource(R.string.program_tomorrow)
@@ -200,6 +207,7 @@ private fun Schedule(programs: List<ProgramEntity>, now: Long, hasArchive: Boole
                     now = now,
                     timeFormat = timeFormat,
                     archive = hasArchive,
+                    reminded = row.program.startMs in reminderStarts,
                     onClick = { onClick(row.program) },
                     modifier = if (i == startIndex) Modifier.focusRequester(startFocus) else Modifier,
                 )
@@ -209,7 +217,7 @@ private fun Schedule(programs: List<ProgramEntity>, now: Long, hasArchive: Boole
 }
 
 @Composable
-private fun ProgramRow(program: ProgramEntity, now: Long, timeFormat: DateFormat, archive: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun ProgramRow(program: ProgramEntity, now: Long, timeFormat: DateFormat, archive: Boolean, reminded: Boolean, onClick: () -> Unit, modifier: Modifier) {
     var focused by remember { mutableStateOf(false) }
     val isNow = program.startMs <= now && program.endMs > now
     val isPast = program.endMs <= now
@@ -243,6 +251,7 @@ private fun ProgramRow(program: ProgramEntity, now: Long, timeFormat: DateFormat
                         // Marks programmes that can be watched from the archive.
                         Text("⟲ ", fontSize = 17.sp, color = Brand.Accent)
                     }
+                    if (reminded) Text("🔔 ", fontSize = 15.sp)
                     Text(
                         program.title,
                         fontSize = 17.sp,

@@ -33,6 +33,8 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -139,8 +141,16 @@ fun VodBrowseScreen(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp),
                     )
                 }
-                (items as? ItemsState.Ready)?.let { Text(it.entries.size.toString(), color = Brand.TextSecondary) }
-                Clock(color = Brand.TextSecondary, modifier = Modifier.padding(start = 20.dp))
+                (items as? ItemsState.Ready)?.let {
+                    Text(
+                        pluralStringResource(if (vm.kind == VodKind.MOVIE) R.plurals.movie_count else R.plurals.series_count, it.entries.size, it.entries.size),
+                        color = Brand.TextSecondary,
+                    )
+                }
+                androidx.compose.foundation.layout.Box(
+                    Modifier.padding(horizontal = 18.dp).width(1.dp).height(28.dp).background(Brand.TextSecondary.copy(alpha = 0.4f)),
+                )
+                Clock(color = Brand.TextPrimary, large = true)
             }
             when (val s = items) {
                 ItemsState.Loading -> Text(stringResource(R.string.vod_loading), color = Brand.TextSecondary, modifier = Modifier.padding(top = 24.dp))

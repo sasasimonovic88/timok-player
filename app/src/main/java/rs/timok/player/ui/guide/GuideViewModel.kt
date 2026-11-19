@@ -40,7 +40,18 @@ class GuideViewModel @Inject constructor(
     savedState: SavedStateHandle,
     private val playlists: PlaylistRepository,
     private val channels: ChannelRepository,
+    private val reminderManager: rs.timok.player.data.reminder.ReminderManager,
 ) : ViewModel() {
+
+    /** Keys ("streamId@startMs") of programmes with a reminder, to mark them in the grid. */
+    val reminderKeys: StateFlow<Set<String>> = reminderManager.reminders
+        .map { list -> list.mapTo(HashSet()) { it.key } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Sets or removes the reminder for [program] on [row]; returns true when it is now set. */
+    fun toggleReminder(row: ChannelRow, program: ProgramEntity): Boolean = reminderManager.toggle(
+        rs.timok.player.data.reminder.Reminder(row.streamId, _group.value.key, row.name, program.title, program.startMs)
+    )
 
     /** Channel to start on (the one playing), if any. */
     val startStreamId: Long? = savedState.get<Long>("streamId")?.takeIf { it > 0 }

@@ -98,6 +98,9 @@ fun GuideScreen(
     val groups by vm.groups.collectAsStateWithLifecycle()
     val group by vm.group.collectAsStateWithLifecycle()
     val now by vm.now.collectAsStateWithLifecycle()
+    val reminderKeys by vm.reminderKeys.collectAsStateWithLifecycle()
+    // Future programme chosen with OK: offer a reminder or the channel's schedule.
+    var choice by remember { mutableStateOf<Pair<ChannelRow, ProgramEntity>?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val notInArchive = stringResource(R.string.program_not_in_archive)
@@ -177,7 +180,7 @@ fun GuideScreen(
                 if (request != null) onArchive(request) else Toast.makeText(context, notInArchive, Toast.LENGTH_SHORT).show()
             }
             program.endMs <= nowMs -> onWatch(groupKey, row.streamId)
-            else -> onProgram(groupKey, row.streamId)
+            else -> choice = row to program
         }
     }
 
@@ -247,6 +250,7 @@ fun GuideScreen(
                                 dpPerMs = dpPerMs,
                                 focused = !headerFocused && i == focusIndex,
                                 cursorMs = cursorMs,
+                                reminderKeys = reminderKeys,
                             )
                         }
                     }
@@ -254,6 +258,63 @@ fun GuideScreen(
             }
         }
     }
+    choice?.let { (row, program) ->
+        val set = "${row.streamId}@${program.startMs}" in reminderKeys
+        val setText = stringResource(R.string.reminder_set, program.title)
+        val removedText = stringResource(R.string.reminder_removed)
+        ReminderChoiceDialog(
+            title = program.title,
+            reminderSet = set,
+            onToggleReminder = {
+                choice = null
+                val nowSet = vm.toggleReminder(row, program)
+                Toast.makeText(context, if (nowSet) setText else removedText, Toast.LENGTH_SHORT).show()
+            },
+            onSchedule = {
+                choice = null
+                onProgram(group.key, row.streamId)
+            },
+            onDismiss = { choice = null },
+        )
+    }
+    // Focus back on the grid after the dialog closes.
+    LaunchedEffect(choice) {
+        if (choice == null) {
+            withFrameNanos { }
+            runCatching { rootFocus.requestFocus() }
+        }
+    }
+}
+
+@Composable
+private fun ReminderChoiceDialog(
+    title: String,
+    reminderSet: Boolean,
+    onToggleReminder: () -> Unit,
+    onSchedule: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val first = remember { FocusRequester() }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .width(520.dp)
+                .background(Brand.Background, RoundedCornerShape(20.dp))
+                .padding(28.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+        ) {
+            Text(title, style = MaterialTheme.typography.titleLarge, color = Brand.TextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+                rs.timok.player.ui.components.TvButton(
+                    stringResource(if (reminderSet) R.string.reminder_remove else R.string.reminder_add),
+                    onClick = onToggleReminder,
+                    modifier = Modifier.focusRequester(first),
+                )
+                rs.timok.player.ui.components.TvButton(stringResource(R.string.options_program), onClick = onSchedule)
+            }
+        }
+    }
+    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
 }
 
 /** Focused programme: title, time, how long it has left or until it starts, channel and description. */
@@ -350,6 +411,7 @@ private fun GuideRow(
     dpPerMs: Float,
     focused: Boolean,
     cursorMs: Long,
+    reminderKeys: Set<String>,
 ) {
     val viewEndMs = viewStartMs + WINDOW_MS
     Row(Modifier.fillMaxWidth().height(RowHeight + RowGap).padding(bottom = RowGap)) {
@@ -373,7 +435,8 @@ private fun GuideRow(
                     val start = maxOf(p.startMs, viewStartMs)
                     val end = minOf(p.endMs, viewEndMs)
                     Block(
-                        text = p.title,
+                        // Bell: a reminder is set for this programme.
+                        text = if ("${row.streamId}@${p.startMs}" in reminderKeys) "🔔 ${p.title}" else p.title,
                         x = ((start - viewStartMs) * dpPerMs).dp,
                         width = ((end - start) * dpPerMs).dp,
                         focused = focused && p.startMs <= cursorMs && p.endMs > cursorMs,

@@ -272,4 +272,16 @@
     <string name="error_log_clear">Obriši</string>
     <string name="error_log_close">Zatvori</string>
     <string name="error_log_saved">Dnevnik grešaka je sačuvan.</string>
+
+    <string name="reminder_add">Podseti me</string>
+    <string name="reminder_remove">Ukloni podsetnik</string>
+    <string name="reminder_set">Podsetnik je postavljen: %1$s</string>
+    <string name="reminder_set_short">Podsetnik je postavljen</string>
+    <string name="reminder_removed">Podsetnik je uklonjen</string>
+    <string name="reminder_starts">Počinje u %1$s</string>
+    <string name="reminder_watch">Gledaj</string>
+
+    <plurals name="channel_count"><item quantity="one">%d kanal</item><item quantity="few">%d kanala</item><item quantity="other">%d kanala</item></plurals>
+    <plurals name="movie_count"><item quantity="one">%d film</item><item quantity="few">%d filma</item><item quantity="other">%d filmova</item></plurals>
+    <plurals name="series_count"><item quantity="one">%d serija</item><item quantity="few">%d serije</item><item quantity="other">%d serija</item></plurals>
 </resources>
