@@ -54,6 +54,11 @@ internal fun SleepWarningDialog(secondsLeft: Int, minutes: Int, onExtend: () -> 
                 color = Brand.TextPrimary,
                 textAlign = TextAlign.Center,
             )
+            Text(
+                stringResource(R.string.sleep_hint),
+                color = Brand.TextSecondary,
+                textAlign = TextAlign.Center,
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 TvButton(stringResource(R.string.sleep_extend, minutes), onExtend, Modifier.focusRequester(extendFocus))
                 TvButton(stringResource(R.string.sleep_now), onSleepNow)

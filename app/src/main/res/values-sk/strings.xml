@@ -78,12 +78,12 @@
     <string name="aspect_fit">Originál</string>
     <string name="aspect_zoom">Priblížiť</string>
     <string name="aspect_stretch">Roztiahnuť</string>
-    <string name="options_sleep">Časovač vypnutia: %1$s</string>
+    <string name="options_sleep">Zastaviť sledovanie po: %1$s</string>
     <string name="sleep_off">Vypnutý</string>
     <string name="sleep_running">%1$d min (zostáva %2$d)</string>
-    <string name="sleep_warning">Vypnutie o %1$d s</string>
+    <string name="sleep_warning">Sledovanie sa zastaví o %1$d s</string>
     <string name="sleep_extend">Ešte %1$d min</string>
-    <string name="sleep_now">Vypnúť teraz</string>
+    <string name="sleep_now">Zastaviť teraz</string>
     <string name="options_archive">Archív (pozrieť skôr)</string>
     <string name="options_program">Program kanála</string>
     <string name="program_title">Program</string>
@@ -262,4 +262,5 @@
 
     <string name="settings_screen_margin">Okraj obrazovky</string>
     <string name="settings_screen_margin_hint">Zvýš, ak sú menu alebo info lišta na okrajoch TV orezané</string>
+    <string name="sleep_hint">Zastaví prehrávanie a nechá box uspať. TV sa vypne, ak to box a TV podporujú (HDMI-CEC).</string>
 </resources>

@@ -78,12 +78,12 @@
     <string name="aspect_fit">Original</string>
     <string name="aspect_zoom">Zoom</string>
     <string name="aspect_stretch">Strecken</string>
-    <string name="options_sleep">Sleep-Timer: %1$s</string>
+    <string name="options_sleep">Wiedergabe beenden nach: %1$s</string>
     <string name="sleep_off">Aus</string>
     <string name="sleep_running">%1$d Min. (noch %2$d)</string>
-    <string name="sleep_warning">Ausschalten in %1$d s</string>
+    <string name="sleep_warning">Wiedergabe endet in %1$d s</string>
     <string name="sleep_extend">+%1$d Min.</string>
-    <string name="sleep_now">Jetzt ausschalten</string>
+    <string name="sleep_now">Jetzt beenden</string>
     <string name="options_archive">Archiv (früher ansehen)</string>
     <string name="options_program">Senderprogramm</string>
     <string name="program_title">Programm</string>
@@ -262,4 +262,5 @@
 
     <string name="settings_screen_margin">Bildschirmrand</string>
     <string name="settings_screen_margin_hint">Erhöhen, wenn Menüs oder die Infoleiste an den Rändern des TV abgeschnitten sind</string>
+    <string name="sleep_hint">Beendet die Wiedergabe und lässt die Box schlafen. Der TV schaltet sich ab, wenn Box und TV das unterstützen (HDMI-CEC).</string>
 </resources>

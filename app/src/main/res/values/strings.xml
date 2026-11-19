@@ -81,12 +81,12 @@
     <string name="aspect_fit">Original</string>
     <string name="aspect_zoom">Zoom</string>
     <string name="aspect_stretch">Stretch</string>
-    <string name="options_sleep">Sleep timer: %1$s</string>
+    <string name="options_sleep">Stop watching after: %1$s</string>
     <string name="sleep_off">Off</string>
     <string name="sleep_running">%1$d min (%2$d left)</string>
-    <string name="sleep_warning">Turning off in %1$d s</string>
+    <string name="sleep_warning">Playback stops in %1$d s</string>
     <string name="sleep_extend">+%1$d min</string>
-    <string name="sleep_now">Turn off now</string>
+    <string name="sleep_now">Stop now</string>
     <string name="options_archive">Archive (watch earlier)</string>
     <string name="options_program">Channel guide</string>
     <string name="program_title">Program guide</string>
@@ -267,4 +267,5 @@
 
     <string name="settings_screen_margin">Screen edge margin</string>
     <string name="settings_screen_margin_hint">Raise it if menus or the info bar are cut off at the edges of your TV</string>
+    <string name="sleep_hint">Stops playback and lets the box go to sleep. The TV turns off too if the box and TV support it (HDMI-CEC).</string>
 </resources>

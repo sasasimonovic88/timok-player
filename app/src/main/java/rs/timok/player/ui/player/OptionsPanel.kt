@@ -12,6 +12,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -148,6 +153,7 @@ internal fun OptionsPanel(
                 leading = "☾",
                 leadingColor = if (sleepMinutes > 0) Brand.Accent else Brand.TextSecondary,
                 onClick = onCycleSleep,
+                hint = stringResource(R.string.sleep_hint),
             )
         }
         item { OptionItem(stringResource(R.string.options_reload), leading = "↻", onClick = onReload) }
@@ -190,16 +196,24 @@ private fun OptionItem(
     checked: Boolean = false,
     leading: String? = null,
     leadingColor: Color = Brand.TextSecondary,
+    /** Explanation shown under the item while it has focus. */
+    hint: String? = null,
 ) {
-    TvClickable(onClick = onClick, modifier = modifier.fillMaxWidth(), focusedScale = 1.03f) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+    var focused by remember { mutableStateOf(false) }
+    TvClickable(onClick = onClick, modifier = modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }, focusedScale = 1.03f) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 11.dp), verticalAlignment = Alignment.Top) {
             Text(
                 if (checked) "✓" else leading.orEmpty(),
                 color = if (checked) Brand.Accent else leadingColor,
                 fontSize = 17.sp,
                 modifier = Modifier.width(28.dp),
             )
-            Text(text, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Column {
+                Text(text, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (hint != null && focused) {
+                    Text(hint, fontSize = 13.sp, color = Brand.TextSecondary, modifier = Modifier.padding(top = 2.dp))
+                }
+            }
         }
     }
 }

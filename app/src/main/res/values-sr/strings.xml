@@ -78,12 +78,12 @@
     <string name="aspect_fit">Original</string>
     <string name="aspect_zoom">Popuni (zoom)</string>
     <string name="aspect_stretch">Razvuci</string>
-    <string name="options_sleep">Tajmer za gašenje: %1$s</string>
+    <string name="options_sleep">Zaustavi gledanje posle: %1$s</string>
     <string name="sleep_off">Isključen</string>
     <string name="sleep_running">%1$d min (još %2$d)</string>
-    <string name="sleep_warning">Gašenje za %1$d s</string>
+    <string name="sleep_warning">Gledanje se zaustavlja za %1$d s</string>
     <string name="sleep_extend">Još %1$d min</string>
-    <string name="sleep_now">Ugasi sada</string>
+    <string name="sleep_now">Zaustavi sada</string>
     <string name="options_archive">Arhiva (gledaj ranije)</string>
     <string name="options_program">Program kanala</string>
     <string name="program_title">Program</string>
@@ -262,4 +262,5 @@
 
     <string name="settings_screen_margin">Margina ekrana</string>
     <string name="settings_screen_margin_hint">Povećaj ako su meni ili info traka odsečeni na ivicama TV-a</string>
+    <string name="sleep_hint">Zaustavlja reprodukciju i pušta box da se uspava. TV se gasi ako to box i TV podržavaju (HDMI-CEC).</string>
 </resources>
