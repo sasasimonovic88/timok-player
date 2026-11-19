@@ -52,7 +52,7 @@ class ProgramViewModel @Inject constructor(
             val key = row.epgChannelId
             if (pid == null || key == null) flowOf(emptyList()) else channels.schedule(pid, key, from)
         }
-        .map { list -> ScheduleState.Ready(dropOverlaps(list)) }
+        .map { list -> ScheduleState.Ready(rs.timok.player.epg.cleanSchedule(list)) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ScheduleState.Loading)
 
     /** Current minute; moves the "now" marker and progress while the screen stays open. */
@@ -74,16 +74,6 @@ class ProgramViewModel @Inject constructor(
         return catchup.request(row, program)
     }
 
-    /** Sloppy guides repeat entries or overlap; keep one programme per start time, in order. */
-    private fun dropOverlaps(list: List<ProgramEntity>): List<ProgramEntity> {
-        val out = ArrayList<ProgramEntity>(list.size)
-        for (p in list) {
-            val last = out.lastOrNull()
-            if (last != null && p.startMs == last.startMs) continue
-            out += p
-        }
-        return out
-    }
 
     private companion object {
         /** The guide keeps about three hours of the past; show what is there. */

@@ -109,7 +109,7 @@ class GuideViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             val pid = playlists.activePlaylistNow()?.id ?: return@launch
             val keys = list.subList(range.first, range.last + 1).mapNotNull { it.epgChannelId }.distinct()
-            val result = channels.programsFor(pid, keys, minMs, maxMs).mapValues { (_, l) -> dropOverlaps(l) }
+            val result = channels.programsFor(pid, keys, minMs, maxMs).mapValues { (_, l) -> rs.timok.player.epg.cleanSchedule(l) }
             _programs.value = result
         }
     }
@@ -118,16 +118,6 @@ class GuideViewModel @Inject constructor(
 
     suspend fun archiveRequest(row: ChannelRow, program: ProgramEntity): VodPlayRequest? = catchup.request(row, program)
 
-    /** Sloppy guides repeat entries or overlap; keep one programme per start time, in order. */
-    private fun dropOverlaps(list: List<ProgramEntity>): List<ProgramEntity> {
-        val out = ArrayList<ProgramEntity>(list.size)
-        for (p in list) {
-            val last = out.lastOrNull()
-            if (last != null && p.startMs < last.endMs && p.startMs <= last.startMs) continue
-            out += p
-        }
-        return out
-    }
 
     private companion object {
         const val PAST_MS = 3 * 60 * 60 * 1000L
