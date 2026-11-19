@@ -369,7 +369,10 @@ private fun VideoBackground(playback: PlaybackController) {
     key(useTexture) {
     // Forced 16:9 / 4:3: the view is given that shape (centered, black around it) and fills it.
     val ratio = aspect.forcedRatio
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    // Black behind the video: the window has no background of its own, so bars beside a 4:3 picture would
+    // otherwise show whatever lies below the app (a white launcher on some boxes). The SurfaceView still punches
+    // through this fill where the picture is.
+    Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
     AndroidView(
         factory = { ctx ->
             val layout = if (useTexture) R.layout.player_view_texture else R.layout.player_view_surface
