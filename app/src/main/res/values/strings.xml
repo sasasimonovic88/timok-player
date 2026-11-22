@@ -146,6 +146,12 @@
     <string name="settings_limit_video_hint">Skips 4K and other video above the screen resolution (never below 1080p). Some boxes freeze when decoding 4K.</string>
     <string name="settings_texture_video">Compatible video display</string>
     <string name="settings_texture_video_hint">Turn on if menus or text over the picture smear or leave trails (seen on some TCL TVs). Uses more processing power; turn it off on weak boxes.</string>
+    <string name="settings_standby_awake">Keep decoder working after standby</string>
+    <string name="settings_standby_awake_hint">Keeps the box from deep sleep while the TV is off. On some boxes (e.g. Amlogic) the picture stays black after the TV is switched back on until the box is restarted. The screen still turns off; power use barely changes.</string>
+    <string name="standby_channel">Standby</string>
+    <string name="standby_notification">Keeping the video decoder ready</string>
+    <string name="radio_label">Radio</string>
+    <string name="radio_now">Now: %1$s · until %2$s</string>
     <string name="settings_secure_dns">Secure DNS (DNS over HTTPS)</string>
     <string name="settings_secure_dns_hint">Looks up server addresses through Cloudflare or Google over an encrypted connection. Helps when your internet provider blocks some channels or movies. Only server names are sent, never your login details.</string>
     <string name="settings_categories">Categories</string>

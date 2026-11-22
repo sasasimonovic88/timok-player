@@ -213,6 +213,10 @@ class SettingsViewModel @Inject constructor(
         okHttp.connectionPool.evictAll()
     }
 
+    val standbyAwake: StateFlow<Boolean> = AppPrefs.standbyAwake
+
+    fun toggleStandbyAwake() = AppPrefs.setStandbyAwake(context, !standbyAwake.value)
+
     val textureVideo: StateFlow<Boolean> =
         settings.textureVideo.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 

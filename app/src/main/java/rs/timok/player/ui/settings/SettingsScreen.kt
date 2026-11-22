@@ -381,6 +381,7 @@ private fun PlaybackSection(vm: SettingsViewModel, focus: FocusRequester) {
     val limitVideo by vm.limitVideo.collectAsStateWithLifecycle()
     val secureDns by vm.secureDns.collectAsStateWithLifecycle()
     val textureVideo by vm.textureVideo.collectAsStateWithLifecycle()
+    val standbyAwake by vm.standbyAwake.collectAsStateWithLifecycle()
     Column(Modifier.width(760.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingRow(
             title = stringResource(R.string.settings_background_video),
@@ -405,6 +406,13 @@ private fun PlaybackSection(vm: SettingsViewModel, focus: FocusRequester) {
             onClick = vm::toggleTextureVideo,
         )
         SettingRow(
+            title = stringResource(R.string.settings_standby_awake),
+            hint = stringResource(R.string.settings_standby_awake_hint),
+            value = onOff(standbyAwake),
+            valueActive = standbyAwake,
+            onClick = vm::toggleStandbyAwake,
+        )
+        SettingRow(
             title = stringResource(R.string.settings_secure_dns),
             hint = stringResource(R.string.settings_secure_dns_hint),
             value = onOff(secureDns),
@@ -427,6 +435,7 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
     val accent by vm.accent.collectAsStateWithLifecycle()
     val screenMargin by vm.screenMargin.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
+    var languageDialog by remember { mutableStateOf(false) }
     Column(Modifier.width(560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.settings_display_size), style = MaterialTheme.typography.titleMedium, color = Brand.TextPrimary)
         Text(stringResource(R.string.settings_display_size_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
@@ -541,28 +550,72 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
                 )
             }
         }
-        Text(
-            stringResource(R.string.settings_language),
-            style = MaterialTheme.typography.titleMedium,
-            color = Brand.TextPrimary,
-            modifier = Modifier.padding(top = 12.dp),
+        SettingRow(
+            title = stringResource(R.string.settings_language),
+            value = languageLabel(language) + "  ▾",
+            valueActive = true,
+            onClick = { languageDialog = true },
+            modifier = Modifier.padding(top = 8.dp),
         )
-        AppPrefs.languages.forEach { tag ->
-            val selected = tag == language
-            SettingRow(
-                title = languageLabel(tag),
-                value = if (selected) "✓" else "",
-                valueActive = true,
-                onClick = {
-                    if (!selected) {
-                        vm.setLanguage(tag)
-                        // Activity strings are resolved at attach time, so rebuild it in the new language.
-                        activity?.recreate()
-                    }
-                },
+    }
+    if (languageDialog) {
+        LanguageDialog(
+            current = language,
+            onPick = { tag ->
+                languageDialog = false
+                if (tag != language) {
+                    vm.setLanguage(tag)
+                    // Activity strings are resolved at attach time, so rebuild it in the new language.
+                    activity?.recreate()
+                }
+            },
+            onDismiss = { languageDialog = false },
+        )
+    }
+}
+
+/** Drop-down list of UI languages; opens on the current one, OK picks, Back closes. */
+@Composable
+private fun LanguageDialog(current: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    val currentFocus = remember { FocusRequester() }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            Modifier
+                .width(480.dp)
+                .background(Brand.Background, tileShape)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(R.string.settings_language),
+                style = MaterialTheme.typography.titleLarge,
+                color = Brand.TextPrimary,
+                modifier = Modifier.padding(start = 6.dp, bottom = 8.dp),
             )
+            AppPrefs.languages.forEach { tag ->
+                val selected = tag == current
+                TvClickable(
+                    onClick = { onPick(tag) },
+                    selected = selected,
+                    modifier = Modifier.fillMaxWidth().then(if (selected) Modifier.focusRequester(currentFocus) else Modifier),
+                ) {
+                    Row(Modifier.padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (selected) "●" else "○",
+                            color = if (selected) Brand.Accent else Brand.TextSecondary,
+                            modifier = Modifier.width(32.dp),
+                        )
+                        Text(
+                            languageLabel(tag),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (selected) Brand.Accent else Brand.TextPrimary,
+                        )
+                    }
+                }
+            }
         }
     }
+    LaunchedEffect(Unit) { runCatching { currentFocus.requestFocus() } }
 }
 
 @Composable

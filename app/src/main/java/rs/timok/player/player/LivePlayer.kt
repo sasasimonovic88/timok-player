@@ -112,6 +112,10 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
     private val _streamInfo = MutableStateFlow(StreamInfo())
     val streamInfo: StateFlow<StreamInfo> = _streamInfo
 
+    private val _audioOnly = MutableStateFlow(false)
+    /** Live stream with sound but no picture (a radio channel); the UI shows a radio screen instead of black. */
+    val audioOnly: StateFlow<Boolean> = _audioOnly
+
     private val _tracks = MutableStateFlow<List<TrackOption>>(emptyList())
     /** Audio and subtitle tracks of the current stream. */
     val tracks: StateFlow<List<TrackOption>> = _tracks
@@ -311,6 +315,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
                         return
                     }
                 }
+                _audioOnly.value = live && !tracks.containsType(C.TRACK_TYPE_VIDEO) && tracks.containsType(C.TRACK_TYPE_AUDIO)
                 _tracks.value = TrackOption.from(tracks)
                 val info = StreamInfo.fromTracks(tracks)
                 val (width, height) = pictureSize(player.videoSize)
@@ -447,6 +452,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         if (!live && player.currentPosition > 0) startPositionMs = player.currentPosition
         mainHandler.removeCallbacks(rateTicker)
         _streamInfo.value = StreamInfo()
+        _audioOnly.value = false
         player.stop()
         _status.value = PlaybackStatus.Idle
     }
@@ -460,6 +466,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
 
     private fun resetStreamInfo() {
         _streamInfo.value = StreamInfo()
+        _audioOnly.value = false
         _tracks.value = emptyList()
         segmentKbps = null
         rateSamples.clear()

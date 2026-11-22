@@ -143,6 +143,12 @@
     <string name="settings_limit_video_hint">Ne pušta 4K i drugi video veće rezolucije od ekrana (nikad ispod 1080p). Neki uređaji se zaglave pri dekodiranju 4K.</string>
     <string name="settings_texture_video">Kompatibilni prikaz videa</string>
     <string name="settings_texture_video_hint">Uključite ako se meniji ili natpisi preko slike razmazuju ili ostavljaju tragove (viđeno na nekim TCL televizorima). Troši više snage; na slabijim boxovima ostavite isključeno.</string>
+    <string name="settings_standby_awake">Ispravan dekoder posle standby-a</string>
+    <string name="settings_standby_awake_hint">Box ne ide u duboko spavanje dok je TV ugašen. Na nekim boxovima (npr. Amlogic) posle paljenja TV-a ostaje crna slika dok se box ne restartuje. Ekran se i dalje gasi, a potrošnja struje se skoro ne menja.</string>
+    <string name="standby_channel">Standby</string>
+    <string name="standby_notification">Dekoder ostaje spreman za paljenje TV-a</string>
+    <string name="radio_label">Radio</string>
+    <string name="radio_now">Sada: %1$s · do %2$s</string>
     <string name="settings_secure_dns">Sigurni DNS (DNS preko HTTPS-a)</string>
     <string name="settings_secure_dns_hint">Adrese servera traži preko Cloudflare-a ili Google-a šifrovanom vezom. Pomaže kada internet provajder blokira neke kanale ili filmove. Šalju se samo nazivi servera, nikad podaci za prijavu.</string>
     <string name="settings_categories">Kategorije</string>

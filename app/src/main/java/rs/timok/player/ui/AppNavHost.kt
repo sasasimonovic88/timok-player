@@ -414,4 +414,6 @@ private fun VideoBackground(playback: PlaybackController) {
     )
     }
     }
+    // Radio channels have no picture: a radio screen instead of black.
+    rs.timok.player.ui.player.RadioScreen()
 }

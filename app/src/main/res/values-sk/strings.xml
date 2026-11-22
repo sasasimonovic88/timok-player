@@ -143,6 +143,12 @@
     <string name="settings_limit_video_hint">Preskočí 4K a iné video s vyšším rozlíšením, než má displej (nikdy pod 1080p). Niektoré zariadenia pri dekódovaní 4K zamrznú.</string>
     <string name="settings_texture_video">Kompatibilné zobrazenie videa</string>
     <string name="settings_texture_video_hint">Zapnite, ak sa menu alebo texty nad obrazom rozmazávajú alebo zanechávajú stopy (pozorované na niektorých TV TCL). Vyžaduje viac výkonu; na slabších boxoch nechajte vypnuté.</string>
+    <string name="settings_standby_awake">Funkčný dekodér po pohotovostnom režime</string>
+    <string name="settings_standby_awake_hint">Box neprejde do hlbokého spánku, kým je TV vypnutý. Na niektorých boxoch (napr. Amlogic) zostane po zapnutí TV čierny obraz, kým sa box nereštartuje. Obrazovka sa stále vypína; spotreba sa takmer nemení.</string>
+    <string name="standby_channel">Pohotovostný režim</string>
+    <string name="standby_notification">Dekodér videa zostáva pripravený</string>
+    <string name="radio_label">Rádio</string>
+    <string name="radio_now">Teraz: %1$s · do %2$s</string>
     <string name="settings_secure_dns">Bezpečné DNS (DNS cez HTTPS)</string>
     <string name="settings_secure_dns_hint">Vyhľadáva adresy serverov šifrovane cez Cloudflare alebo Google. Pomáha, keď poskytovateľ internetu blokuje niektoré kanály alebo filmy. Posielajú sa iba názvy serverov, nikdy prihlasovacie údaje.</string>
     <string name="settings_categories">Kategórie</string>

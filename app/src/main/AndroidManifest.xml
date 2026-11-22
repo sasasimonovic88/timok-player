@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Autostart: boot broadcast, plus the overlay grant that lets Android 10+ open the app from it. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Standby: a foreground service holds a wake lock so Amlogic boxes never attempt a suspend (see StandbyWakeLock). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <!-- TV first, but do not exclude devices without these features. -->
@@ -53,6 +57,15 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".system.StandbyService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the CPU awake while the TV box is in standby, because a suspend attempt breaks the hardware video decoder on some boxes until reboot." />
+        </service>
 
         <!-- WorkManager is initialized on demand with the Hilt worker factory. -->
         <provider

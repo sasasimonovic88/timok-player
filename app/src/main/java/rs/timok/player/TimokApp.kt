@@ -28,6 +28,7 @@ class TimokApp : Application(), Configuration.Provider, SingletonImageLoader.Fac
         // First, so a crash during start-up is recorded too.
         rs.timok.player.data.log.ErrorLog.init(this)
         AppPrefs.init(this)
+        rs.timok.player.system.StandbyWakeLock.init(this)
         RefreshWorker.schedule(this)
     }
 

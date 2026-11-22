@@ -25,6 +25,7 @@ object AppPrefs {
     private const val KEY_CLOCK_OVERLAY = "clock_overlay"
     private const val KEY_ACCENT = "accent"
     private const val KEY_SCREEN_MARGIN = "screen_margin_pct"
+    private const val KEY_STANDBY_AWAKE = "standby_awake"
 
     /** Percent of the screen kept free at each edge, for TVs that crop the picture (overscan). */
     val screenMargins = listOf(0, 2, 4, 6)
@@ -84,6 +85,11 @@ object AppPrefs {
     /** Current display size, read by the theme; loaded in [init] before the first frame. */
     val uiScale: StateFlow<Float> = _uiScale
 
+    private val _standbyAwake = MutableStateFlow(rs.timok.player.system.StandbyWakeLock.defaultEnabled)
+
+    /** Hold a wake lock in standby so the box never attempts a suspend (see [rs.timok.player.system.StandbyWakeLock]). */
+    val standbyAwake: StateFlow<Boolean> = _standbyAwake
+
     private val _secureDns = MutableStateFlow(true)
 
     /** Resolve host names over HTTPS instead of the network's DNS; on by default. */
@@ -109,6 +115,13 @@ object AppPrefs {
         _clockOverlay.value = prefs(context).getBoolean(KEY_CLOCK_OVERLAY, false)
         _accent.value = prefs(context).getString(KEY_ACCENT, null)?.takeIf { it in accents } ?: "orange"
         _screenMargin.value = prefs(context).getInt(KEY_SCREEN_MARGIN, 0)
+        _standbyAwake.value = prefs(context).getBoolean(KEY_STANDBY_AWAKE, rs.timok.player.system.StandbyWakeLock.defaultEnabled)
+    }
+
+    fun setStandbyAwake(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_STANDBY_AWAKE, enabled).apply()
+        _standbyAwake.value = enabled
+        rs.timok.player.system.StandbyWakeLock.onSettingChanged(enabled)
     }
 
     fun setScreenMargin(context: Context, percent: Int) {

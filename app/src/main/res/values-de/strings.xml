@@ -143,6 +143,12 @@
     <string name="settings_limit_video_hint">Überspringt 4K und andere Videos über der Bildschirmauflösung (nie unter 1080p). Manche Geräte frieren beim Dekodieren von 4K ein.</string>
     <string name="settings_texture_video">Kompatible Videoanzeige</string>
     <string name="settings_texture_video_hint">Einschalten, wenn Menüs oder Text über dem Bild verschmieren oder Spuren hinterlassen (bei manchen TCL-Fernsehern). Benötigt mehr Rechenleistung; auf schwachen Boxen ausgeschaltet lassen.</string>
+    <string name="settings_standby_awake">Decoder nach Standby funktionsfähig halten</string>
+    <string name="settings_standby_awake_hint">Verhindert, dass die Box in den Tiefschlaf geht, während der Fernseher aus ist. Bei manchen Boxen (z. B. Amlogic) bleibt das Bild nach dem Einschalten des Fernsehers schwarz, bis die Box neu gestartet wird. Der Bildschirm geht weiterhin aus; der Stromverbrauch ändert sich kaum.</string>
+    <string name="standby_channel">Standby</string>
+    <string name="standby_notification">Videodecoder bleibt bereit</string>
+    <string name="radio_label">Radio</string>
+    <string name="radio_now">Jetzt: %1$s · bis %2$s</string>
     <string name="settings_secure_dns">Sicheres DNS (DNS über HTTPS)</string>
     <string name="settings_secure_dns_hint">Ermittelt Serveradressen verschlüsselt über Cloudflare oder Google. Hilft, wenn Ihr Internetanbieter einige Sender oder Filme blockiert. Es werden nur Servernamen gesendet, niemals Ihre Zugangsdaten.</string>
     <string name="settings_categories">Kategorien</string>
