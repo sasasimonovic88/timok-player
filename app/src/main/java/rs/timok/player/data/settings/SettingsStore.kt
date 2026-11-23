@@ -20,15 +20,14 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 class SettingsStore @Inject constructor(@ApplicationContext private val context: Context) {
 
     private val activePlaylistKey = longPreferencesKey("active_playlist")
-    private val lastStreamKey = longPreferencesKey("last_stream")
-    private val lastGroupKey = stringPreferencesKey("last_group")
+    private val legacyStreamKey = longPreferencesKey("last_stream")
+    private val legacyGroupKey = stringPreferencesKey("last_group")
     private val backgroundPlaybackKey = booleanPreferencesKey("background_playback")
     private val limitVideoKey = booleanPreferencesKey("limit_video_to_display")
     private val textureVideoKey = booleanPreferencesKey("texture_video")
     private val vodSortKey = stringPreferencesKey("vod_sort")
 
     val activePlaylistId: Flow<Long?> = context.dataStore.data.map { it[activePlaylistKey] }
-    val lastGroup: Flow<String?> = context.dataStore.data.map { it[lastGroupKey] }
 
     /** Live video behind the channel list; can be turned off on weak boxes. */
     val backgroundPlayback: Flow<Boolean> = context.dataStore.data.map { it[backgroundPlaybackKey] ?: true }
@@ -60,14 +59,42 @@ class SettingsStore @Inject constructor(@ApplicationContext private val context:
         if (id == null) it.remove(activePlaylistKey) else it[activePlaylistKey] = id
     }
 
-    suspend fun lastStreamId(): Long? = context.dataStore.data.first()[lastStreamKey]
+    private fun lastStreamKey(playlistId: Long) = longPreferencesKey("last_stream_$playlistId")
+    private fun lastGroupKey(playlistId: Long) = stringPreferencesKey("last_group_$playlistId")
 
-    suspend fun setLastWatched(streamId: Long, group: String) = context.dataStore.edit {
-        it[lastStreamKey] = streamId
-        it[lastGroupKey] = group
+    /**
+     * Last channel and group of an account. Versions before 0.5.6 had one account and stored them without
+     * an id; the first read moves those to the account that is read (the only one at that time).
+     */
+    suspend fun lastWatched(playlistId: Long): Pair<Long?, String?> {
+        var result: Pair<Long?, String?> = null to null
+        context.dataStore.edit { p ->
+            val oldStream = p[legacyStreamKey]
+            val oldGroup = p[legacyGroupKey]
+            if (oldStream != null || oldGroup != null) {
+                if (p[lastStreamKey(playlistId)] == null) oldStream?.let { p[lastStreamKey(playlistId)] = it }
+                if (p[lastGroupKey(playlistId)] == null) oldGroup?.let { p[lastGroupKey(playlistId)] = it }
+                p.remove(legacyStreamKey)
+                p.remove(legacyGroupKey)
+            }
+            result = p[lastStreamKey(playlistId)] to p[lastGroupKey(playlistId)]
+        }
+        return result
     }
 
-    suspend fun setLastGroup(group: String) = context.dataStore.edit { it[lastGroupKey] = group }
+    suspend fun setLastWatched(playlistId: Long, streamId: Long, group: String) = context.dataStore.edit {
+        it[lastStreamKey(playlistId)] = streamId
+        it[lastGroupKey(playlistId)] = group
+    }
+
+    suspend fun setLastGroup(playlistId: Long, group: String) = context.dataStore.edit { it[lastGroupKey(playlistId)] = group }
+
+    /** Forgets everything stored per account (account removed). */
+    suspend fun clearAccount(playlistId: Long) = context.dataStore.edit {
+        it.remove(lastStreamKey(playlistId))
+        it.remove(lastGroupKey(playlistId))
+        it.remove(recentKey(playlistId))
+    }
 
     private fun recentKey(playlistId: Long) = stringPreferencesKey("recent_channels_$playlistId")
 

@@ -26,6 +26,8 @@ object AppPrefs {
     private const val KEY_ACCENT = "accent"
     private const val KEY_SCREEN_MARGIN = "screen_margin_pct"
     private const val KEY_STANDBY_AWAKE = "standby_awake"
+    private const val KEY_DECODER = "decoder_mode"
+    private const val KEY_BUFFER = "buffer_mode"
 
     /** Percent of the screen kept free at each edge, for TVs that crop the picture (overscan). */
     val screenMargins = listOf(0, 2, 4, 6)
@@ -103,7 +105,32 @@ object AppPrefs {
      */
     val epgPresets: StateFlow<Set<String>> = _epgPresets
 
+    private val _decoderMode = MutableStateFlow(rs.timok.player.player.DecoderMode.HARDWARE)
+    /** Video decoder preference; read by the player each time a decoder is created. */
+    val decoderMode: StateFlow<rs.timok.player.player.DecoderMode> = _decoderMode
+
+    private val _bufferMode = MutableStateFlow(rs.timok.player.player.BufferMode.AUTO)
+    /** How much the player buffers ahead; read by the player on every loading decision. */
+    val bufferMode: StateFlow<rs.timok.player.player.BufferMode> = _bufferMode
+
+    // Device-specific (decoders differ per box), so neither is in the backup.
+    fun setDecoderMode(context: Context, mode: rs.timok.player.player.DecoderMode) {
+        prefs(context).edit().putString(KEY_DECODER, mode.name).apply()
+        _decoderMode.value = mode
+    }
+
+    fun setBufferMode(context: Context, mode: rs.timok.player.player.BufferMode) {
+        prefs(context).edit().putString(KEY_BUFFER, mode.name).apply()
+        _bufferMode.value = mode
+    }
+
     fun init(context: Context) {
+        _decoderMode.value = prefs(context).getString(KEY_DECODER, null)
+            ?.let { runCatching { rs.timok.player.player.DecoderMode.valueOf(it) }.getOrNull() }
+            ?: rs.timok.player.player.DecoderMode.HARDWARE
+        _bufferMode.value = prefs(context).getString(KEY_BUFFER, null)
+            ?.let { runCatching { rs.timok.player.player.BufferMode.valueOf(it) }.getOrNull() }
+            ?: rs.timok.player.player.BufferMode.AUTO
         _uiScale.value = prefs(context).getFloat(KEY_UI_SCALE, 1f)
         _secureDns.value = prefs(context).getBoolean(KEY_SECURE_DNS, true)
         _epgPresets.value = prefs(context).getStringSet(KEY_EPG_PRESETS, null)?.toSet() ?: EpgPresets.defaultIds

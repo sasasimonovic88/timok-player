@@ -34,7 +34,13 @@ import rs.timok.player.ui.components.TvTextField
 import rs.timok.player.ui.theme.Brand
 
 @Composable
-fun LoginScreen(onSignedIn: () -> Unit, vm: LoginViewModel = hiltViewModel()) {
+fun LoginScreen(
+    onSignedIn: () -> Unit,
+    /** Set when adding another account: Back returns, and the screen says it is a new account. */
+    onBack: (() -> Unit)? = null,
+    vm: LoginViewModel = hiltViewModel(),
+) {
+    if (onBack != null) androidx.activity.compose.BackHandler(onBack = onBack)
     val state by vm.state.collectAsStateWithLifecycle()
     val firstField = remember { FocusRequester() }
     val buttonFocus = remember { FocusRequester() }
@@ -54,7 +60,7 @@ fun LoginScreen(onSignedIn: () -> Unit, vm: LoginViewModel = hiltViewModel()) {
                 modifier = Modifier.size(96.dp),
             )
             Text(stringResource(R.string.brand_name), style = MaterialTheme.typography.headlineMedium, color = Brand.TextPrimary)
-            Text(stringResource(R.string.login_subtitle), style = MaterialTheme.typography.bodyMedium, color = Brand.TextSecondary)
+            Text(stringResource(if (onBack != null) R.string.login_add_subtitle else R.string.login_subtitle), style = MaterialTheme.typography.bodyMedium, color = Brand.TextSecondary)
             Spacer(Modifier.height(4.dp))
 
             if (!state.serverLocked) {

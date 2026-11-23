@@ -217,6 +217,22 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleStandbyAwake() = AppPrefs.setStandbyAwake(context, !standbyAwake.value)
 
+    val decoderMode: StateFlow<rs.timok.player.player.DecoderMode> = AppPrefs.decoderMode
+    val bufferMode: StateFlow<rs.timok.player.player.BufferMode> = AppPrefs.bufferMode
+
+    /** Applied at once: the channel behind the settings reopens with the new choice. */
+    fun setDecoderMode(mode: rs.timok.player.player.DecoderMode) {
+        if (mode == decoderMode.value) return
+        AppPrefs.setDecoderMode(context, mode)
+        playback.restartLive()
+    }
+
+    fun setBufferMode(mode: rs.timok.player.player.BufferMode) {
+        if (mode == bufferMode.value) return
+        AppPrefs.setBufferMode(context, mode)
+        playback.restartLive()
+    }
+
     val textureVideo: StateFlow<Boolean> =
         settings.textureVideo.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
@@ -320,12 +336,25 @@ class SettingsViewModel @Inject constructor(
         refreshJob = viewModelScope.launch { loadEpg(p.id) }
     }
 
+    /** Every stored account, for the account list. */
+    val accounts: StateFlow<List<PlaylistEntity>> =
+        playlists.allPlaylists.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _switchedToOther = MutableStateFlow(false)
+    /** The active account was removed and another one took its place. */
+    val switchedToOther: StateFlow<Boolean> = _switchedToOther
+
     fun removeAccount() {
         val p = playlist.value ?: return
         viewModelScope.launch {
             playlists.deletePlaylist(p.id)
-            _signedOut.value = true
+            if (playlists.allPlaylists.first().isEmpty()) _signedOut.value = true else _switchedToOther.value = true
         }
+    }
+
+    fun renameAccount(name: String) {
+        val p = playlist.value ?: return
+        viewModelScope.launch { playlists.rename(p.id, name) }
     }
 
     private companion object {

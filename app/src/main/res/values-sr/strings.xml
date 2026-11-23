@@ -98,6 +98,7 @@
     <string name="archive_today">Danas</string>
     <string name="archive_yesterday">Juče</string>
     <string name="options_reload">Ponovo učitaj kanal</string>
+    <string name="player_access_denied">Server je odbio pristup. Nalog se možda koristi na drugom uređaju (broj istovremenih konekcija je ograničen) ili je istekao. Zatvorite drugi uređaj i pokušajte ponovo.</string>
     <string name="player_source_error">Server ne šalje ispravan video za ovaj sadržaj. Pokušajte kasnije ili izaberite drugi.</string>
     <string name="player_unsupported">Ovaj sadržaj ne može da se pusti na ovom uređaju.</string>
     <string name="player_resolution_limited">Rezolucija videa je veća od dozvoljene za ovaj ekran. Ograničenje možete isključiti u Podešavanjima.</string>
@@ -290,4 +291,20 @@
     <plurals name="channel_count"><item quantity="one">%d kanal</item><item quantity="few">%d kanala</item><item quantity="other">%d kanala</item></plurals>
     <plurals name="movie_count"><item quantity="one">%d film</item><item quantity="few">%d filma</item><item quantity="other">%d filmova</item></plurals>
     <plurals name="series_count"><item quantity="one">%d serija</item><item quantity="few">%d serije</item><item quantity="other">%d serija</item></plurals>
+    <string name="settings_accounts">Nalozi</string>
+    <string name="settings_account_active">● Aktivan</string>
+    <string name="settings_account_switch">Prebaci</string>
+    <string name="settings_account_add">+ Dodaj nalog</string>
+    <string name="settings_account_name">Naziv naloga</string>
+    <string name="account_picker_title">Izaberi nalog</string>
+    <string name="login_add_subtitle">Dodaj još jedan nalog</string>
+    <string name="settings_decoder">Video dekoder</string>
+    <string name="settings_decoder_hint">Hardverski odgovara skoro svakom boxu. Softverski može da pomogne kada kanal ima smetnje ili crnu sliku, ali traži jak procesor: HD i 4K mogu da seckaju.</string>
+    <string name="settings_decoder_hardware">Hardverski</string>
+    <string name="settings_decoder_software">Softverski</string>
+    <string name="settings_buffer">Bafer</string>
+    <string name="settings_buffer_hint">Koliko unapred plejer učitava. Kratak: brža promena kanala. Dug: veća rezerva za spor internet, najviše pomaže kod filmova. Veličina je i dalje ograničena memorijom uređaja.</string>
+    <string name="settings_buffer_auto">Automatski</string>
+    <string name="settings_buffer_short">Kratak (brži start)</string>
+    <string name="settings_buffer_long">Dug (spor internet)</string>
 </resources>

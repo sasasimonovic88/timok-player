@@ -101,6 +101,7 @@
     <string name="archive_today">Today</string>
     <string name="archive_yesterday">Yesterday</string>
     <string name="options_reload">Reload channel</string>
+    <string name="player_access_denied">The server refused access. The account may be in use on another device (allowed connections are limited) or it has expired. Close the other device and try again.</string>
     <string name="player_source_error">The server is not sending a playable video for this content. Try again later or pick another one.</string>
     <string name="player_unsupported">This content cannot be played on this device.</string>
     <string name="player_resolution_limited">The video resolution is higher than the screen allows. You can turn off the limit in Settings.</string>
@@ -295,4 +296,20 @@
     <plurals name="channel_count"><item quantity="one">%d channel</item><item quantity="other">%d channels</item></plurals>
     <plurals name="movie_count"><item quantity="one">%d movie</item><item quantity="other">%d movies</item></plurals>
     <plurals name="series_count"><item quantity="one">%d series</item><item quantity="other">%d series</item></plurals>
+    <string name="settings_accounts">Accounts</string>
+    <string name="settings_account_active">● Active</string>
+    <string name="settings_account_switch">Switch</string>
+    <string name="settings_account_add">+ Add account</string>
+    <string name="settings_account_name">Account name</string>
+    <string name="account_picker_title">Choose account</string>
+    <string name="login_add_subtitle">Add another account</string>
+    <string name="settings_decoder">Video decoder</string>
+    <string name="settings_decoder_hint">Hardware is right for almost every box. Software can help when a channel shows artefacts or a black picture, but needs a strong processor: HD and 4K may stutter.</string>
+    <string name="settings_decoder_hardware">Hardware</string>
+    <string name="settings_decoder_software">Software</string>
+    <string name="settings_buffer">Buffer</string>
+    <string name="settings_buffer_hint">How far ahead the player loads. Short: faster channel change. Long: more reserve for slow internet, mostly helps movies. The size is still limited by the device memory.</string>
+    <string name="settings_buffer_auto">Automatic</string>
+    <string name="settings_buffer_short">Short (faster start)</string>
+    <string name="settings_buffer_long">Long (slow internet)</string>
 </resources>

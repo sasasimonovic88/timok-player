@@ -80,8 +80,8 @@ class ChannelsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val last = settings.lastGroup.first()
-            val lastStream = settings.lastStreamId()
+            val pid = playlists.activePlaylistNow()?.id ?: return@launch
+            val (lastStream, last) = settings.lastWatched(pid)
             focusTargetId = lastStream
             val g = GroupKey.parse(last ?: GroupKey.All.key)
             _group.value = g
@@ -108,7 +108,7 @@ class ChannelsViewModel @Inject constructor(
     fun selectGroup(g: GroupKey) {
         if (_group.value == g || _move.value != null) return
         _group.value = g
-        viewModelScope.launch { settings.setLastGroup(g.key) }
+        viewModelScope.launch { playlists.activePlaylistNow()?.let { settings.setLastGroup(it.id, g.key) } }
     }
 
     fun onLongPress(row: ChannelRow) {

@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -42,9 +44,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             val playlist = playlists.activePlaylistNow()
             if (playlist != null) {
-                settings.lastStreamId()?.let { id ->
-                    _startChannel.value = StartChannel(settings.lastGroup.first() ?: GroupKey.All.key, id)
-                }
+                val (lastStream, lastGroup) = settings.lastWatched(playlist.id)
+                lastStream?.let { id -> _startChannel.value = StartChannel(lastGroup ?: GroupKey.All.key, id) }
             }
             _startRoute.value = if (playlist == null) Routes.LOGIN else Routes.CHANNELS
         }
@@ -89,4 +90,34 @@ class MainViewModel @Inject constructor(
 
     /** Opens the typed channel; returns true when a number was pending. */
     fun commitNumber(): Boolean = numberEntry.commit()
+
+    // Accounts (profiles).
+
+    val accounts: StateFlow<List<rs.timok.player.data.db.PlaylistEntity>> =
+        playlists.allPlaylists.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val activeAccount: StateFlow<rs.timok.player.data.db.PlaylistEntity?> =
+        playlists.activePlaylist.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _accountChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** Another account is now active: screens restart from the channel list. */
+    val accountChanged: SharedFlow<Unit> = _accountChanged
+
+    fun switchAccount(id: Long) {
+        if (id == activeAccount.value?.id) return
+        viewModelScope.launch {
+            // Stop first: the old account's stream must be closed before the new one opens (max connections).
+            playback.resetForAccountSwitch()
+            reminders.clearAll()
+            playlists.switchTo(id)
+            _accountChanged.tryEmit(Unit)
+        }
+    }
+
+    /** A new account was signed in (it is active already), or the active one was removed while others remain. */
+    fun onAccountChanged() {
+        playback.resetForAccountSwitch()
+        reminders.clearAll()
+        _accountChanged.tryEmit(Unit)
+    }
 }

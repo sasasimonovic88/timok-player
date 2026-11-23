@@ -17,6 +17,7 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.TransferListener
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -28,6 +29,7 @@ import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.util.EventLogger
 import rs.timok.player.BuildConfig
 import rs.timok.player.data.log.ErrorLog
+import rs.timok.player.data.settings.AppPrefs
 import androidx.media3.exoplayer.source.LoadEventInfo
 import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -95,8 +97,10 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             // If a hardware decoder fails to initialise, try the next one instead of failing playback.
             .setEnableDecoderFallback(true)
+            // Settings → Playback → Decoder: hardware or software first.
+            .setMediaCodecSelector(PreferenceCodecSelector { AppPrefs.decoderMode.value })
         ExoPlayer.Builder(context, renderers)
-            .setLoadControl(loadControl())
+            .setLoadControl(adjustableLoadControl())
             .setTrackSelector(trackSelector)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSource, extractors))
             .build()
@@ -219,6 +223,8 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
     private var everReady = false
     /** Source errors of the current item before it ever played. */
     private var sourceErrors = 0
+    /** The server answered 401/403 for the current item (account busy on another device, expired, blocked). */
+    private var accessDenied = false
     /** False while playing VOD: seeking allowed, no reconnect at the end. */
     private var live = true
     /** VOD start position; also where a reconnect resumes. */
@@ -340,6 +346,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
                 if (loggedErrors.add(error.errorCode)) {
                     ErrorLog.event("PLAYBACK", "${error.errorCodeName}: ${error.cause?.message ?: error.message}\n${currentUrlForLog()}")
                 }
+                if (isAccessDenied(error)) accessDenied = true
                 if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                     player.seekToDefaultPosition()
                     player.prepare()
@@ -359,7 +366,8 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
                     if (!live || sourceErrors >= MAX_SOURCE_ERRORS) {
                         mainHandler.removeCallbacks(stallRunnable)
                         player.stop()
-                        fail(REASON_SOURCE)
+                        // A refused .m3u8 is usually followed by an error page on the .ts fallback: report the refusal.
+                        fail(if (accessDenied) REASON_ACCESS_DENIED else REASON_SOURCE)
                         return
                     }
                 }
@@ -383,6 +391,7 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         startedAt = SystemClock.elapsedRealtime()
         everReady = false
         sourceErrors = 0
+        accessDenied = false
         loggedErrors.clear()
         // Close the old connection before opening a new one.
         player.stop()
@@ -455,6 +464,12 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         _audioOnly.value = false
         player.stop()
         _status.value = PlaybackStatus.Idle
+    }
+
+    /** Stops and drops the item, so the video view shows black instead of the last frame (account switch). */
+    fun clear() {
+        stop()
+        player.clearMediaItems()
     }
 
     fun release() {
@@ -587,6 +602,11 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
     private fun redact(url: String) = url.replace(CREDENTIALS_PATH, "/$1/***/***/")
         .replace(Regex("(username|password)=[^&]*"), "$1=***")
 
+    private fun isAccessDenied(e: PlaybackException): Boolean =
+        generateSequence(e.cause) { it.cause }.take(5)
+            .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
+            .any { it.responseCode == 401 || it.responseCode == 403 }
+
     private fun isSourceError(e: PlaybackException) = when (e.errorCode) {
         PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
         PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
@@ -619,14 +639,26 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
          * with OutOfMemoryError. Cap the buffer by bytes at a quarter of the heap; time limits still apply
          * to normal streams, the byte cap only kicks in for high bitrates or a decoder that stopped consuming.
          */
-        private fun loadControl(): DefaultLoadControl {
+        private fun adjustableLoadControl(): AdjustableLoadControl {
+            val (base, target) = loadControl()
+            return AdjustableLoadControl(base, target) { AppPrefs.bufferMode.value }
+        }
+
+        private fun loadControl(): Pair<DefaultLoadControl, Int> {
             val heap = Runtime.getRuntime().maxMemory()
             val target = (heap / 4).coerceIn(MIN_BUFFER_BYTES, MAX_BUFFER_BYTES).toInt()
             Log.i(TAG, "Buffer limit ${target / (1024 * 1024)} MB (heap ${heap / (1024 * 1024)} MB)")
             return DefaultLoadControl.Builder()
+                // Room for the longest buffer setting; AdjustableLoadControl stops earlier for the others.
+                .setBufferDurationsMs(
+                    DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                    BufferMode.LONG.maxMs.toInt(),
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
+                )
                 .setTargetBufferBytes(target)
                 .setPrioritizeTimeOverSizeThresholds(false)
-                .build()
+                .build() to target
         }
         private const val MIN_BUFFER_BYTES = 16L * 1024 * 1024
         private const val MAX_BUFFER_BYTES = 64L * 1024 * 1024
@@ -637,6 +669,8 @@ class LivePlayer(private val context: Context, private val okHttp: OkHttpClient,
         const val REASON_VIDEO_FORMAT = "video_format"
         /** [PlaybackStatus.Failed] reason when the server does not return playable media. */
         const val REASON_SOURCE = "source"
+        /** [PlaybackStatus.Failed] reason when the server refuses the account (HTTP 401/403). */
+        const val REASON_ACCESS_DENIED = "access_denied"
 
         private const val TAG = "LivePlayer"
         /** About 5 minutes of retries with the capped backoff before giving up. */

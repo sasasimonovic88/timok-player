@@ -64,6 +64,12 @@ class ReminderManager @Inject constructor(@ApplicationContext context: Context) 
         return !exists
     }
 
+    /** Reminders point at channels of one account; another account becoming active drops them. */
+    fun clearAll() {
+        _due.value = null
+        save(emptyList())
+    }
+
     fun dismissDue() {
         _due.value = null
     }

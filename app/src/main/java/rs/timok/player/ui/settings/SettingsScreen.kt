@@ -91,10 +91,16 @@ private enum class Section(@StringRes val title: Int, @DrawableRes val icon: Int
 fun SettingsScreen(
     onBack: () -> Unit,
     onSignedOut: () -> Unit,
+    onAddAccount: () -> Unit = {},
+    onSwitchAccount: (Long) -> Unit = {},
+    /** The active account was removed and another stored one took its place. */
+    onAccountChanged: () -> Unit = {},
     vm: SettingsViewModel = hiltViewModel(),
 ) {
     val signedOut by vm.signedOut.collectAsStateWithLifecycle()
     LaunchedEffect(signedOut) { if (signedOut) onSignedOut() }
+    val switchedToOther by vm.switchedToOther.collectAsStateWithLifecycle()
+    LaunchedEffect(switchedToOther) { if (switchedToOther) onAccountChanged() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refreshAutoStartGrant() }
 
     // Saved so a language change (which recreates the activity) stays in the same section.
@@ -139,7 +145,7 @@ fun SettingsScreen(
                 lastSectionName = s.name
                 sectionName = s.name
             }
-            Section.ACCOUNT -> AccountSection(vm, sectionFocus)
+            Section.ACCOUNT -> AccountSection(vm, sectionFocus, onAddAccount, onSwitchAccount)
             Section.CATEGORIES -> CategoriesSection(vm, sectionFocus)
             Section.PLAYBACK -> PlaybackSection(vm, sectionFocus)
             Section.INTERFACE -> InterfaceSection(vm, sectionFocus)
@@ -160,7 +166,7 @@ private fun Tiles(vm: SettingsViewModel, focus: Map<Section, FocusRequester>, on
     val autoStartBlocked by vm.autoStartBlocked.collectAsStateWithLifecycle()
 
     val summaries = mapOf(
-        Section.ACCOUNT to (playlist?.let { stringResource(R.string.settings_status, it.status) } ?: ""),
+        Section.ACCOUNT to (playlist?.name ?: ""),
         Section.CATEGORIES to stringResource(R.string.settings_categories_summary, categories.count { !it.hidden }, categories.size),
         Section.PLAYBACK to stringResource(R.string.settings_playback_summary),
         Section.INTERFACE to "${languageLabel(language)} · ${percent(uiScale)}",
@@ -230,8 +236,14 @@ private val TILE_HEIGHT = 76.dp
 private val TILE_FOCUS_ROOM = 8.dp
 
 @Composable
-private fun AccountSection(vm: SettingsViewModel, focus: FocusRequester) {
+private fun AccountSection(
+    vm: SettingsViewModel,
+    focus: FocusRequester,
+    onAddAccount: () -> Unit,
+    onSwitchAccount: (Long) -> Unit,
+) {
     val playlist by vm.playlist.collectAsStateWithLifecycle()
+    val accounts by vm.accounts.collectAsStateWithLifecycle()
     val status by vm.status.collectAsStateWithLifecycle()
     var confirmRemove by remember { mutableStateOf(false) }
     val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
@@ -239,8 +251,32 @@ private fun AccountSection(vm: SettingsViewModel, focus: FocusRequester) {
     fun fmt(t: Long?) = t?.let { dateFormat.format(Date(it)) } ?: never
 
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Profiles: OK on another account switches to it; the details below belong to the active one.
+        Text(stringResource(R.string.settings_accounts), color = Brand.TextSecondary, style = MaterialTheme.typography.titleSmall)
+        accounts.forEach { a ->
+            val active = a.id == playlist?.id
+            SettingRow(
+                title = "${a.name} · ${a.username}",
+                value = stringResource(if (active) R.string.settings_account_active else R.string.settings_account_switch),
+                valueActive = active,
+                onClick = { if (!active) onSwitchAccount(a.id) },
+                modifier = Modifier.width(760.dp).then(if (active) Modifier.focusRequester(focus) else Modifier),
+            )
+        }
+        TvButton(stringResource(R.string.settings_account_add), onClick = onAddAccount)
+        Spacer(Modifier.height(12.dp))
         playlist?.let { p ->
-            Info(p.name)
+            // Saved when the keyboard closes or the field is left; blank goes back to the server address.
+            var name by remember(p.id, p.name) { mutableStateOf(p.name) }
+            TvTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = stringResource(R.string.settings_account_name),
+                imeAction = ImeAction.Done,
+                onImeAction = { if (name != p.name) vm.renameAccount(name) },
+                commitOnLeave = true,
+                modifier = Modifier.width(760.dp),
+            )
             Info(stringResource(R.string.settings_status, p.status))
             Info(p.expiresAt?.let { stringResource(R.string.settings_expires, fmt(it)) } ?: stringResource(R.string.settings_expires_never))
             Info(stringResource(R.string.settings_connections, p.maxConnections))
@@ -304,7 +340,7 @@ private fun AccountSection(vm: SettingsViewModel, focus: FocusRequester) {
         }
         status?.let { Text(it, color = Brand.TextSecondary) }
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 16.dp)) {
-            TvButton(stringResource(R.string.settings_refresh), onClick = vm::refresh, modifier = Modifier.focusRequester(focus))
+            TvButton(stringResource(R.string.settings_refresh), onClick = vm::refresh)
             TvButton(stringResource(R.string.settings_logout), onClick = { confirmRemove = true })
         }
     }
@@ -382,6 +418,37 @@ private fun PlaybackSection(vm: SettingsViewModel, focus: FocusRequester) {
     val secureDns by vm.secureDns.collectAsStateWithLifecycle()
     val textureVideo by vm.textureVideo.collectAsStateWithLifecycle()
     val standbyAwake by vm.standbyAwake.collectAsStateWithLifecycle()
+    val decoderMode by vm.decoderMode.collectAsStateWithLifecycle()
+    val bufferMode by vm.bufferMode.collectAsStateWithLifecycle()
+    var decoderDialog by remember { mutableStateOf(false) }
+    var bufferDialog by remember { mutableStateOf(false) }
+    val decoderLabels = mapOf(
+        rs.timok.player.player.DecoderMode.HARDWARE to stringResource(R.string.settings_decoder_hardware),
+        rs.timok.player.player.DecoderMode.SOFTWARE to stringResource(R.string.settings_decoder_software),
+    )
+    val bufferLabels = mapOf(
+        rs.timok.player.player.BufferMode.AUTO to stringResource(R.string.settings_buffer_auto),
+        rs.timok.player.player.BufferMode.SHORT to stringResource(R.string.settings_buffer_short),
+        rs.timok.player.player.BufferMode.LONG to stringResource(R.string.settings_buffer_long),
+    )
+    if (decoderDialog) {
+        ChoiceDialog(
+            title = stringResource(R.string.settings_decoder),
+            options = decoderLabels.toList(),
+            current = decoderMode,
+            onPick = { decoderDialog = false; vm.setDecoderMode(it) },
+            onDismiss = { decoderDialog = false },
+        )
+    }
+    if (bufferDialog) {
+        ChoiceDialog(
+            title = stringResource(R.string.settings_buffer),
+            options = bufferLabels.toList(),
+            current = bufferMode,
+            onPick = { bufferDialog = false; vm.setBufferMode(it) },
+            onDismiss = { bufferDialog = false },
+        )
+    }
     Column(Modifier.width(760.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingRow(
             title = stringResource(R.string.settings_background_video),
@@ -397,6 +464,20 @@ private fun PlaybackSection(vm: SettingsViewModel, focus: FocusRequester) {
             value = onOff(limitVideo),
             valueActive = limitVideo,
             onClick = vm::toggleLimitVideo,
+        )
+        SettingRow(
+            title = stringResource(R.string.settings_decoder),
+            hint = stringResource(R.string.settings_decoder_hint),
+            value = decoderLabels.getValue(decoderMode) + "  ▾",
+            valueActive = decoderMode != rs.timok.player.player.DecoderMode.HARDWARE,
+            onClick = { decoderDialog = true },
+        )
+        SettingRow(
+            title = stringResource(R.string.settings_buffer),
+            hint = stringResource(R.string.settings_buffer_hint),
+            value = bufferLabels.getValue(bufferMode) + "  ▾",
+            valueActive = bufferMode != rs.timok.player.player.BufferMode.AUTO,
+            onClick = { bufferDialog = true },
         )
         SettingRow(
             title = stringResource(R.string.settings_texture_video),
@@ -607,6 +688,50 @@ private fun LanguageDialog(current: String, onPick: (String) -> Unit, onDismiss:
                         )
                         Text(
                             languageLabel(tag),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (selected) Brand.Accent else Brand.TextPrimary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+    LaunchedEffect(Unit) { runCatching { currentFocus.requestFocus() } }
+}
+
+/** One-of-many choice in the style of the language list: focus on the current value, Back closes. */
+@Composable
+private fun <T> ChoiceDialog(title: String, options: List<Pair<T, String>>, current: T, onPick: (T) -> Unit, onDismiss: () -> Unit) {
+    val currentFocus = remember { FocusRequester() }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            Modifier
+                .width(560.dp)
+                .background(Brand.Background, tileShape)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                color = Brand.TextPrimary,
+                modifier = Modifier.padding(start = 6.dp, bottom = 8.dp),
+            )
+            options.forEach { (value, label) ->
+                val selected = value == current
+                TvClickable(
+                    onClick = { onPick(value) },
+                    selected = selected,
+                    modifier = Modifier.fillMaxWidth().then(if (selected) Modifier.focusRequester(currentFocus) else Modifier),
+                ) {
+                    Row(Modifier.padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (selected) "●" else "○",
+                            color = if (selected) Brand.Accent else Brand.TextSecondary,
+                            modifier = Modifier.width(32.dp),
+                        )
+                        Text(
+                            label,
                             style = MaterialTheme.typography.titleMedium,
                             color = if (selected) Brand.Accent else Brand.TextPrimary,
                         )

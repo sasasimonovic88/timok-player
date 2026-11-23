@@ -149,25 +149,47 @@ private const val FOCUS_ANIM_MS = 120
 private fun Int.isSelectKey() =
     this == KeyEvent.KEYCODE_DPAD_CENTER || this == KeyEvent.KEYCODE_ENTER || this == KeyEvent.KEYCODE_NUMPAD_ENTER
 
+/**
+ * Standard button. Tracks its own focus state: the tv-material Surface did not always show focus that was
+ * given programmatically while a screen opened (the button had focus, but looked unfocused).
+ */
 @Composable
 fun TvButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.height(52.dp),
-        shape = ClickableSurfaceDefaults.shape(itemShape),
-        colors = ClickableSurfaceDefaults.colors(
-            containerColor = Brand.Primary,
-            contentColor = Color.White,
-            focusedContainerColor = Brand.Accent,
-            focusedContentColor = Color.Black,
-            disabledContainerColor = Brand.Surface,
-        ),
-        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+    var focused by remember { mutableStateOf(false) }
+    val animate = rs.timok.player.ui.theme.LocalAnimations.current
+    val scale by animateFloatAsState(
+        if (focused && animate) 1.05f else 1f,
+        rs.timok.player.ui.theme.motion(tween(FOCUS_ANIM_MS)),
+        label = "buttonScale",
+    )
+    val shape = itemShape
+    Box(
+        modifier
+            .height(52.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .onFocusChanged { focused = it.isFocused }
+            .clip(shape)
+            .background(
+                when {
+                    !enabled -> Brand.Surface
+                    focused -> Brand.Accent
+                    else -> Brand.Primary
+                },
+                shape,
+            )
+            // Stays focusable while disabled (e.g. while signing in), so focus does not jump away from it.
+            .clickable(interactionSource = null, indication = null) { if (enabled) onClick() }
+            .padding(horizontal = 28.dp),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
-        Box(Modifier.fillMaxHeight().padding(horizontal = 28.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
-            Text(text, style = MaterialTheme.typography.titleMedium)
-        }
+        Text(
+            text,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (focused && enabled) Color.Black else Color.White,
+        )
     }
 }
 

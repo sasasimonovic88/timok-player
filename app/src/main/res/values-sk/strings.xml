@@ -98,6 +98,7 @@
     <string name="archive_today">Dnes</string>
     <string name="archive_yesterday">Včera</string>
     <string name="options_reload">Znova načítať kanál</string>
+    <string name="player_access_denied">Server odmietol prístup. Účet sa možno používa na inom zariadení (počet súčasných pripojení je obmedzený) alebo vypršal. Zatvorte druhé zariadenie a skúste to znova.</string>
     <string name="player_source_error">Server pre tento obsah neposiela prehrateľné video. Skúste to neskôr alebo vyberte iný.</string>
     <string name="player_unsupported">Tento obsah sa na tomto zariadení nedá prehrať.</string>
     <string name="player_resolution_limited">Rozlíšenie videa je vyššie, než tento displej povoľuje. Obmedzenie môžete vypnúť v Nastaveniach.</string>
@@ -290,4 +291,20 @@
     <plurals name="channel_count"><item quantity="one">%d kanál</item><item quantity="few">%d kanály</item><item quantity="other">%d kanálov</item></plurals>
     <plurals name="movie_count"><item quantity="one">%d film</item><item quantity="few">%d filmy</item><item quantity="other">%d filmov</item></plurals>
     <plurals name="series_count"><item quantity="one">%d seriál</item><item quantity="few">%d seriály</item><item quantity="other">%d seriálov</item></plurals>
+    <string name="settings_accounts">Účty</string>
+    <string name="settings_account_active">● Aktívny</string>
+    <string name="settings_account_switch">Prepnúť</string>
+    <string name="settings_account_add">+ Pridať účet</string>
+    <string name="settings_account_name">Názov účtu</string>
+    <string name="account_picker_title">Vyberte účet</string>
+    <string name="login_add_subtitle">Pridať ďalší účet</string>
+    <string name="settings_decoder">Video dekodér</string>
+    <string name="settings_decoder_hint">Hardvérový vyhovuje takmer každému boxu. Softvérový môže pomôcť pri chybách obrazu alebo čiernom obraze, ale potrebuje silný procesor: HD a 4K môžu sekať.</string>
+    <string name="settings_decoder_hardware">Hardvérový</string>
+    <string name="settings_decoder_software">Softvérový</string>
+    <string name="settings_buffer">Vyrovnávacia pamäť</string>
+    <string name="settings_buffer_hint">Ako ďaleko dopredu prehrávač načítava. Krátka: rýchlejšie prepínanie kanálov. Dlhá: väčšia rezerva pre pomalý internet, pomáha hlavne pri filmoch. Veľkosť je stále obmedzená pamäťou zariadenia.</string>
+    <string name="settings_buffer_auto">Automaticky</string>
+    <string name="settings_buffer_short">Krátka (rýchly štart)</string>
+    <string name="settings_buffer_long">Dlhá (pomalý internet)</string>
 </resources>

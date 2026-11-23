@@ -31,7 +31,10 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import rs.timok.player.R
 
-enum class NavDest { SEARCH, TV, GUIDE, MOVIES, SERIES, SETTINGS }
+enum class NavDest { SEARCH, TV, GUIDE, MOVIES, SERIES, SETTINGS, ACCOUNTS }
+
+/** Name of the active account when more than one is stored (the rail then offers a quick switch), else null. */
+val LocalAccountSwitch = androidx.compose.runtime.compositionLocalOf<String?> { null }
 
 /** Left menu shared by the top-level screens: icons only, expands with labels while it has focus. */
 @Composable
@@ -73,6 +76,11 @@ fun NavRail(
                 if (dest == selected) focusManager.moveFocus(FocusDirection.Right) else onNavigate(dest)
             }
         }
+        LocalAccountSwitch.current?.let { accountName ->
+            RailItem(R.drawable.ic_nav_account, accountName, expanded, selected = false) {
+                if (enabled) onNavigate(NavDest.ACCOUNTS)
+            }
+        }
     }
 }
 
@@ -82,7 +90,7 @@ private fun RailItem(icon: Int, label: String, expanded: Boolean, selected: Bool
         Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(painterResource(icon), contentDescription = label, modifier = Modifier.size(24.dp))
             if (expanded) {
-                Text(label, fontSize = 17.sp, maxLines = 1, modifier = Modifier.padding(start = 16.dp))
+                Text(label, fontSize = 17.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(start = 16.dp))
             }
         }
     }

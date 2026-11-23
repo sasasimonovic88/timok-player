@@ -98,6 +98,7 @@
     <string name="archive_today">Heute</string>
     <string name="archive_yesterday">Gestern</string>
     <string name="options_reload">Sender neu laden</string>
+    <string name="player_access_denied">Der Server hat den Zugriff verweigert. Das Konto wird möglicherweise auf einem anderen Gerät verwendet (die Anzahl gleichzeitiger Verbindungen ist begrenzt) oder ist abgelaufen. Schließen Sie das andere Gerät und versuchen Sie es erneut.</string>
     <string name="player_source_error">Der Server liefert für diesen Inhalt kein abspielbares Video. Versuchen Sie es später erneut oder wählen Sie etwas anderes.</string>
     <string name="player_unsupported">Dieser Inhalt kann auf diesem Gerät nicht abgespielt werden.</string>
     <string name="player_resolution_limited">Die Videoauflösung ist höher als für diesen Bildschirm erlaubt. Die Begrenzung können Sie in den Einstellungen ausschalten.</string>
@@ -290,4 +291,20 @@
     <plurals name="channel_count"><item quantity="one">%d Sender</item><item quantity="other">%d Sender</item></plurals>
     <plurals name="movie_count"><item quantity="one">%d Film</item><item quantity="other">%d Filme</item></plurals>
     <plurals name="series_count"><item quantity="one">%d Serie</item><item quantity="other">%d Serien</item></plurals>
+    <string name="settings_accounts">Konten</string>
+    <string name="settings_account_active">● Aktiv</string>
+    <string name="settings_account_switch">Wechseln</string>
+    <string name="settings_account_add">+ Konto hinzufügen</string>
+    <string name="settings_account_name">Kontoname</string>
+    <string name="account_picker_title">Konto wählen</string>
+    <string name="login_add_subtitle">Weiteres Konto hinzufügen</string>
+    <string name="settings_decoder">Videodecoder</string>
+    <string name="settings_decoder_hint">Hardware passt für fast jede Box. Software kann bei Bildfehlern oder schwarzem Bild helfen, braucht aber einen starken Prozessor: HD und 4K können ruckeln.</string>
+    <string name="settings_decoder_hardware">Hardware</string>
+    <string name="settings_decoder_software">Software</string>
+    <string name="settings_buffer">Puffer</string>
+    <string name="settings_buffer_hint">Wie weit der Player vorlädt. Kurz: schnellerer Senderwechsel. Lang: mehr Reserve bei langsamem Internet, hilft vor allem bei Filmen. Die Größe bleibt durch den Gerätespeicher begrenzt.</string>
+    <string name="settings_buffer_auto">Automatisch</string>
+    <string name="settings_buffer_short">Kurz (schneller Start)</string>
+    <string name="settings_buffer_long">Lang (langsames Internet)</string>
 </resources>

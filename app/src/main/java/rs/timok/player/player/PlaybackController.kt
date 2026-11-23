@@ -61,6 +61,14 @@ class PlaybackController @Inject constructor(
         if (playingId != null || vodActive) livePlayer.resume()
     }
 
+    /** Opens the current live channel from scratch (new decoder and buffer), e.g. after a player setting changed. */
+    fun restartLive() {
+        if (vodActive) return
+        val id = _currentStreamId.value ?: return
+        playingId = null
+        play(id, group)
+    }
+
     private var playingId: Long? = null
     private var group: GroupKey = GroupKey.All
     private var playJob: Job? = null
@@ -147,7 +155,7 @@ class PlaybackController @Inject constructor(
             playingId = streamId
             lastOpened?.let { if (it.first != streamId) previousChannel = it }
             lastOpened = streamId to group
-            settings.setLastWatched(streamId, group.key)
+            settings.setLastWatched(playlist.id, streamId, group.key)
             settings.addRecentChannel(playlist.id, streamId)
         }
     }
@@ -158,6 +166,18 @@ class PlaybackController @Inject constructor(
         if (playingId != null || _currentStreamId.value != null) livePlayer.stop()
         playingId = null
         _currentStreamId.value = null
+    }
+
+    /** Another account became active: stop everything and forget channels of the old one. */
+    fun resetForAccountSwitch() {
+        stopAll()
+        // No frozen picture of the old account's channel behind the new channel list.
+        livePlayer.clear()
+        pausedForBrowse = null
+        pausedInBackground = false
+        lastPlayed = null
+        previousChannel = null
+        lastOpened = null
     }
 
     /** Stops live TV and VOD alike without returning to a previous channel (sleep timer). */

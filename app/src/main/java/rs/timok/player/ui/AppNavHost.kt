@@ -66,6 +66,8 @@ import androidx.tv.material3.Text
 
 object Routes {
     const val LOGIN = "login"
+    /** Sign-in of an additional account, opened from Settings; Back returns there. */
+    const val LOGIN_ADD = "login_add"
     const val CHANNELS = "channels"
     const val SETTINGS = "settings"
     const val SEARCH = "search"
@@ -137,6 +139,7 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
         // Live video sits behind every screen; screens draw their own (translucent) backgrounds.
         VideoBackground(playback)
         val nav = rememberNavController()
+        var showAccounts by remember { mutableStateOf(false) }
         // The startup jump into the last channel happens under the splash, so it must not animate.
         var instantPlayer by remember { mutableStateOf(false) }
         val startChannel by mainViewModel.startChannel.collectAsStateWithLifecycle()
@@ -154,6 +157,14 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                     launchSingleTop = true
                 }
                 NavDest.SETTINGS -> nav.navigate(Routes.SETTINGS) { launchSingleTop = true }
+                NavDest.ACCOUNTS -> showAccounts = true
+            }
+        }
+        // Another account became active: start over from its channel list (its last channel resumes there).
+        LaunchedEffect(Unit) {
+            mainViewModel.accountChanged.collect {
+                showAccounts = false
+                nav.navigate(Routes.CHANNELS) { popUpTo(0) { inclusive = true } }
             }
         }
         openGuide.action = {
@@ -197,6 +208,12 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
         val margin by rs.timok.player.data.settings.AppPrefs.screenMargin.collectAsStateWithLifecycle()
         val cfg = androidx.compose.ui.platform.LocalConfiguration.current
         val scale = rs.timok.player.data.settings.AppPrefs.uiScale.collectAsStateWithLifecycle().value
+        val accounts by mainViewModel.accounts.collectAsStateWithLifecycle()
+        val activeAccount by mainViewModel.activeAccount.collectAsStateWithLifecycle()
+        androidx.compose.runtime.CompositionLocalProvider(
+            rs.timok.player.ui.components.LocalAccountSwitch provides
+                if (accounts.size > 1) activeAccount?.name else null,
+        ) {
         NavHost(
             modifier = Modifier.padding(
                 horizontal = (cfg.screenWidthDp / scale * margin / 100f).dp,
@@ -213,6 +230,12 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                 LoginScreen(onSignedIn = {
                     nav.navigate(Routes.CHANNELS) { popUpTo(Routes.LOGIN) { inclusive = true } }
                 })
+            }
+            composable(Routes.LOGIN_ADD) {
+                LoginScreen(
+                    onSignedIn = mainViewModel::onAccountChanged,
+                    onBack = { nav.popBackStack() },
+                )
             }
             composable(
                 Routes.CHANNELS,
@@ -274,6 +297,9 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                         playback.stop()
                         nav.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
                     },
+                    onAddAccount = { nav.navigate(Routes.LOGIN_ADD) { launchSingleTop = true } },
+                    onSwitchAccount = mainViewModel::switchAccount,
+                    onAccountChanged = mainViewModel::onAccountChanged,
                 )
             }
             composable(Routes.VOD, arguments = listOf(navArgument("kind") { type = NavType.StringType })) {
@@ -325,6 +351,18 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
                     onBack = { nav.popBackStack() },
                 )
             }
+        }
+        }
+        if (showAccounts) {
+            rs.timok.player.ui.components.AccountPickerDialog(
+                accounts = accounts,
+                activeId = activeAccount?.id,
+                onPick = { id ->
+                    showAccounts = false
+                    mainViewModel.switchAccount(id)
+                },
+                onDismiss = { showAccounts = false },
+            )
         }
         rs.timok.player.ui.update.UpdateDialog(mainViewModel.updates)
         val dueReminder by mainViewModel.reminders.due.collectAsStateWithLifecycle()

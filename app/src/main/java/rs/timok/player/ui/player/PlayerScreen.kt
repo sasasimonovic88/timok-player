@@ -350,6 +350,7 @@ private fun StatusIndicator(status: PlaybackStatus) {
         is PlaybackStatus.Failed -> when (status.reason) {
             LivePlayer.REASON_RESOLUTION -> stringResource(R.string.player_resolution_limited)
             LivePlayer.REASON_VIDEO_FORMAT -> stringResource(R.string.player_video_format_unsupported)
+            LivePlayer.REASON_ACCESS_DENIED -> stringResource(R.string.player_access_denied)
             LivePlayer.REASON_SOURCE -> stringResource(R.string.player_source_error)
             else -> stringResource(R.string.player_error, status.reason)
         }

@@ -196,6 +196,7 @@ fun VodPlayerScreen(onExit: () -> Unit, vm: VodPlayerViewModel = hiltViewModel()
                 "timeout" -> stringResource(R.string.player_unsupported)
                 LivePlayer.REASON_RESOLUTION -> stringResource(R.string.player_resolution_limited)
                 LivePlayer.REASON_VIDEO_FORMAT -> stringResource(R.string.player_video_format_unsupported)
+                LivePlayer.REASON_ACCESS_DENIED -> stringResource(R.string.player_access_denied)
                 // Catch-up: the server lists the programme but has no recording for it.
                 LivePlayer.REASON_SOURCE -> stringResource(if (request.url != null) R.string.archive_unavailable else R.string.player_source_error)
                 else -> stringResource(R.string.player_error, s.reason)

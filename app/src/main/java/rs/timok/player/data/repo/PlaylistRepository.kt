@@ -43,12 +43,42 @@ class PlaylistRepository @Inject constructor(
 
     suspend fun activePlaylistNow(): PlaylistEntity? = activePlaylist.first()
 
+    /** Every stored account (profile), oldest first. */
+    val allPlaylists: Flow<List<PlaylistEntity>> = playlistDao.observeAll()
+
+    /** Makes [id] the active account and refreshes its lists if they are old. */
+    suspend fun switchTo(id: Long) {
+        settings.setActivePlaylist(id)
+        refreshIfStale()
+    }
+
+    /** Name shown in the account list; blank goes back to the server address. */
+    suspend fun rename(id: Long, name: String) {
+        val playlist = playlistDao.get(id) ?: return
+        playlistDao.update(playlist.copy(name = name.trim().ifBlank { playlist.server.substringAfter("://") }))
+    }
+
     /** Validates the account, stores it, loads channels and schedules the guide download. */
     suspend fun signIn(server: String, username: String, password: String): PlaylistEntity {
         requireNetwork()
         val source = sources.xtream(server, username, password)
         val account = source.authenticate()
         val normalized = XtreamSource.normalizeServer(server)
+        // The same account again (e.g. a changed password): update it instead of adding a duplicate profile.
+        playlistDao.observeAll().first().firstOrNull { it.server == normalized && it.username == username }?.let { existing ->
+            playlistDao.update(
+                existing.copy(
+                    password = password,
+                    status = account.status,
+                    expiresAt = account.expiresAt,
+                    maxConnections = account.maxConnections,
+                )
+            )
+            refreshChannels(existing.id)
+            settings.setActivePlaylist(existing.id)
+            refreshEpgIfStale(playlistDao.get(existing.id)!!)
+            return playlistDao.get(existing.id)!!
+        }
         val id = playlistDao.insert(
             PlaylistEntity(
                 name = normalized.substringAfter("://"),
@@ -142,7 +172,9 @@ class PlaylistRepository @Inject constructor(
             channelDao.deleteHidden(id)
             playlistDao.delete(id)
         }
-        settings.setActivePlaylist(null)
+        settings.clearAccount(id)
+        // The next stored account (if any) becomes active through the fallback in [activePlaylist].
+        if (settings.activePlaylistId.first() == id) settings.setActivePlaylist(null)
     }
 
     fun streamUrl(playlist: PlaylistEntity, streamId: Long, format: StreamFormat): String =
