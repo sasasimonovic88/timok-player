@@ -30,6 +30,8 @@ class MainViewModel @Inject constructor(
     private val playback: rs.timok.player.player.PlaybackController,
     /** Programme reminders; their prompt is shown above every screen. */
     val reminders: rs.timok.player.data.reminder.ReminderManager,
+    /** Parental control; its PIN prompt is shown above every screen. */
+    val parental: rs.timok.player.data.parental.ParentalControl,
 ) : ViewModel() {
 
     /** Null while deciding; the splash screen stays up until then. */
@@ -45,7 +47,9 @@ class MainViewModel @Inject constructor(
             val playlist = playlists.activePlaylistNow()
             if (playlist != null) {
                 val (lastStream, lastGroup) = settings.lastWatched(playlist.id)
-                lastStream?.let { id -> _startChannel.value = StartChannel(lastGroup ?: GroupKey.All.key, id) }
+                // A locked last channel is not opened by itself: the list shows instead of a PIN prompt at power-on.
+                lastStream?.takeUnless { parental.isChannelLocked(playlist.id, it) }
+                    ?.let { id -> _startChannel.value = StartChannel(lastGroup ?: GroupKey.All.key, id) }
             }
             _startRoute.value = if (playlist == null) Routes.LOGIN else Routes.CHANNELS
         }

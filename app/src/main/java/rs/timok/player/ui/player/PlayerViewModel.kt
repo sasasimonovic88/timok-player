@@ -57,6 +57,10 @@ class PlayerViewModel @Inject constructor(
     val sleepMinutes: StateFlow<Int> = sleepTimer.minutes
     val sleepRemainingMs: StateFlow<Long?> = sleepTimer.remainingMs
 
+    /** The PIN for a locked channel was not entered; with nothing playing, the player closes. */
+    val pinCancelled = playback.pinCancelled
+    val nothingPlaying: Boolean get() = playback.currentStreamId.value == null
+
     private val playlist = MutableStateFlow<PlaylistEntity?>(null)
     // "Recently watched" is never zapped through (it reorders itself); such a start falls back to All.
     private val group = MutableStateFlow(GroupKey.parse(savedState.get<String>("group")).let { if (it == GroupKey.Recent) GroupKey.All else it })

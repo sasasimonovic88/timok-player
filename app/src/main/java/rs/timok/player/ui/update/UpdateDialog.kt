@@ -59,7 +59,7 @@ fun UpdateDialog(updates: UpdateManager) {
         is UpdateState.Available -> Panel(
             title = stringResource(R.string.update_available, s.info.versionName),
             subtitle = stringResource(R.string.update_current, BuildConfig.VERSION_NAME),
-            body = s.info.changelog,
+            body = s.info.changelogFor(stringResource(R.string.update_changelog_language)),
             primary = stringResource(R.string.update_install) to { updates.install(s.info) },
             secondary = stringResource(R.string.update_later) to updates::dismiss,
             onDismiss = updates::dismiss,

@@ -1,37 +1,39 @@
 package rs.timok.player.ui.settings
 
-import androidx.compose.foundation.shape.RoundedCornerShape
-import rs.timok.player.ui.components.TvTextField
-import rs.timok.player.epg.EpgRepository
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,20 +42,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -61,25 +66,30 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import kotlinx.coroutines.launch
 import rs.timok.player.BuildConfig
 import rs.timok.player.R
 import rs.timok.player.data.settings.AppPrefs
-import rs.timok.player.system.LocaleHelper
-import rs.timok.player.ui.components.Clock
-import rs.timok.player.ui.components.Chip
-import rs.timok.player.ui.components.TvButton
-import rs.timok.player.ui.components.ConfirmDialog
 import rs.timok.player.epg.EpgPresets
+import rs.timok.player.epg.EpgRepository
+import rs.timok.player.system.LocaleHelper
+import rs.timok.player.ui.components.ButtonStyle
+import rs.timok.player.ui.components.Chip
+import rs.timok.player.ui.components.Clock
+import rs.timok.player.ui.components.ConfirmDialog
+import rs.timok.player.ui.components.TvButton
 import rs.timok.player.ui.components.TvClickable
+import rs.timok.player.ui.components.TvTextField
 import rs.timok.player.ui.theme.Brand
 import java.text.DateFormat
 import java.util.Date
 import kotlin.math.roundToInt
 
-/** Settings are grouped into tiles; each tile opens its own section. */
+/** Settings sections, listed in the menu on the left. */
 private enum class Section(@StringRes val title: Int, @DrawableRes val icon: Int) {
     ACCOUNT(R.string.settings_account, R.drawable.ic_set_account),
     CATEGORIES(R.string.settings_categories, R.drawable.ic_set_categories),
+    PARENTAL(R.string.settings_parental, R.drawable.ic_set_lock),
     PLAYBACK(R.string.settings_playback, R.drawable.ic_set_playback),
     INTERFACE(R.string.settings_interface, R.drawable.ic_set_display),
     AUTOSTART(R.string.settings_autostart, R.drawable.ic_set_power),
@@ -87,6 +97,23 @@ private enum class Section(@StringRes val title: Int, @DrawableRes val icon: Int
     ABOUT(R.string.settings_about, R.drawable.ic_set_about),
 }
 
+/** Same corners as the focus outline of [TvClickable]; used by the dialogs. */
+private val tileShape = RoundedCornerShape(8.dp)
+
+private val navColor = Color(0xFF0E1726)
+
+/**
+ * Set while a row that is about to disappear has focus (the PIN row, "Set PIN", "Turn off"). When it goes, the
+ * window gives focus to the first menu item; while held, that must not switch the section.
+ */
+private class NavHold {
+    var active by mutableStateOf(false)
+}
+
+/**
+ * Two panes: the section menu on the left, the focused section's settings on the right (they follow the menu's
+ * focus, nothing to open). Right goes into the settings, Left or Back returns to the menu, Back there leaves.
+ */
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -104,136 +131,157 @@ fun SettingsScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refreshAutoStartGrant() }
 
     // Saved so a language change (which recreates the activity) stays in the same section.
-    var sectionName by rememberSaveable { mutableStateOf<String?>(null) }
-    var lastSectionName by rememberSaveable { mutableStateOf(Section.ACCOUNT.name) }
-    val section = sectionName?.let { Section.valueOf(it) }
-    BackHandler(enabled = section != null) { sectionName = null }
-
-    val tileFocus = remember { Section.entries.associateWith { FocusRequester() } }
-    val sectionFocus = remember { FocusRequester() }
-    LaunchedEffect(section) {
-        if (section == null) vm.reloadPrefs()
+    var sectionName by rememberSaveable { mutableStateOf(Section.ACCOUNT.name) }
+    val section = Section.valueOf(sectionName)
+    val navFocus = remember { Section.entries.associateWith { FocusRequester() } }
+    val contentFocus = remember { FocusRequester() }
+    val hold = remember { NavHold() }
+    var contentFocused by remember { mutableStateOf(false) }
+    BackHandler(enabled = contentFocused) { runCatching { navFocus.getValue(section).requestFocus() } }
+    LaunchedEffect(Unit) {
         withFrameNanos { }
-        runCatching { if (section == null) tileFocus.getValue(Section.valueOf(lastSectionName)).requestFocus() else sectionFocus.requestFocus() }
+        runCatching { navFocus.getValue(section).requestFocus() }
     }
+    // Another screen may have changed settings (e.g. a restored backup).
+    LaunchedEffect(section) { vm.reloadPrefs() }
 
+    Row(Modifier.fillMaxSize().background(Brand.Background)) {
+        NavPane(vm, section, navFocus, contentFocus, onFocus = { if (!hold.active) sectionName = it.name })
+        Column(Modifier.weight(1f).fillMaxHeight().padding(start = 36.dp, end = 48.dp, top = 28.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 18.dp)) {
+                Text(
+                    stringResource(section.title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Brand.TextPrimary,
+                    modifier = Modifier.weight(1f),
+                )
+                Clock(color = Brand.TextSecondary)
+            }
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .onFocusChanged { contentFocused = it.hasFocus }
+                    // Left out of the settings goes back to this section's menu item, not to whichever is beside it.
+                    .focusProperties {
+                        onExit = {
+                            if (requestedFocusDirection == FocusDirection.Left) {
+                                cancelFocusChange()
+                                runCatching { navFocus.getValue(section).requestFocus() }
+                            }
+                        }
+                    }
+                    .focusGroup(),
+            ) {
+                key(section) {
+                    when (section) {
+                        Section.ACCOUNT -> AccountSection(vm, contentFocus, onAddAccount, onSwitchAccount)
+                        Section.CATEGORIES -> CategoriesSection(vm, contentFocus)
+                        Section.PARENTAL -> PinGate(vm, contentFocus, hold) { ParentalSection(vm, contentFocus, hold) }
+                        Section.PLAYBACK -> PlaybackSection(vm, contentFocus)
+                        Section.INTERFACE -> InterfaceSection(vm, contentFocus)
+                        Section.AUTOSTART -> AutoStartSection(vm, contentFocus)
+                        // A restore could unlock categories, so it is behind the PIN as well.
+                        Section.BACKUP -> PinGate(vm, contentFocus, hold) { BackupSection(contentFocus) }
+                        Section.ABOUT -> AboutSection(contentFocus)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavPane(
+    vm: SettingsViewModel,
+    current: Section,
+    navFocus: Map<Section, FocusRequester>,
+    contentFocus: FocusRequester,
+    onFocus: (Section) -> Unit,
+) {
+    val autoStartBlocked by vm.autoStartBlocked.collectAsStateWithLifecycle()
     Column(
         Modifier
-            .fillMaxSize()
-            .background(Brand.Background)
-            .padding(horizontal = 56.dp, vertical = 28.dp),
+            .width(290.dp)
+            .fillMaxHeight()
+            .background(navColor)
+            .padding(horizontal = 14.dp, vertical = 24.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            if (section == null) {
-                Image(painterResource(R.drawable.logo), contentDescription = null, modifier = Modifier.size(40.dp))
-            } else {
-                Icon(painterResource(section.icon), contentDescription = null, tint = Brand.Accent, modifier = Modifier.size(32.dp))
-            }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp, bottom = 20.dp)) {
+            Icon(painterResource(R.drawable.ic_nav_settings), contentDescription = null, tint = Brand.Accent, modifier = Modifier.size(26.dp))
             Text(
-                stringResource(section?.title ?: R.string.settings),
-                style = MaterialTheme.typography.headlineSmall,
+                stringResource(R.string.settings),
+                style = MaterialTheme.typography.titleLarge,
                 color = Brand.TextPrimary,
-                modifier = Modifier.padding(start = 16.dp).weight(1f),
+                modifier = Modifier.padding(start = 12.dp),
             )
-            Clock(color = Brand.TextSecondary)
         }
-        // The tiles' scroll area adds its own top padding (TILE_FOCUS_ROOM).
-        Spacer(Modifier.height(if (section == null) 24.dp - TILE_FOCUS_ROOM else 24.dp))
-
-        when (section) {
-            null -> Tiles(vm, tileFocus) { s ->
-                lastSectionName = s.name
-                sectionName = s.name
-            }
-            Section.ACCOUNT -> AccountSection(vm, sectionFocus, onAddAccount, onSwitchAccount)
-            Section.CATEGORIES -> CategoriesSection(vm, sectionFocus)
-            Section.PLAYBACK -> PlaybackSection(vm, sectionFocus)
-            Section.INTERFACE -> InterfaceSection(vm, sectionFocus)
-            Section.AUTOSTART -> AutoStartSection(vm, sectionFocus)
-            Section.BACKUP -> BackupSection(sectionFocus)
-            Section.ABOUT -> AboutSection(sectionFocus)
-        }
-    }
-}
-
-@Composable
-private fun Tiles(vm: SettingsViewModel, focus: Map<Section, FocusRequester>, onOpen: (Section) -> Unit) {
-    val playlist by vm.playlist.collectAsStateWithLifecycle()
-    val categories by vm.liveCategories.collectAsStateWithLifecycle()
-    val language by vm.language.collectAsStateWithLifecycle()
-    val uiScale by vm.uiScale.collectAsStateWithLifecycle()
-    val autoStart by vm.autoStart.collectAsStateWithLifecycle()
-    val autoStartBlocked by vm.autoStartBlocked.collectAsStateWithLifecycle()
-
-    val summaries = mapOf(
-        Section.ACCOUNT to (playlist?.name ?: ""),
-        Section.CATEGORIES to stringResource(R.string.settings_categories_summary, categories.count { !it.hidden }, categories.size),
-        Section.PLAYBACK to stringResource(R.string.settings_playback_summary),
-        Section.INTERFACE to "${languageLabel(language)} · ${percent(uiScale)}",
-        Section.AUTOSTART to stringResource(if (autoStart) R.string.state_on else R.string.state_off),
-        Section.BACKUP to stringResource(R.string.settings_backup_summary),
-        Section.ABOUT to stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-    )
-    // Scrolls when a large display size pushes the last row off screen; focus brings tiles into view.
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        // The scroll area clips its content: inner padding leaves room for the focused tile's scale and outline
-        // (the header spacer above is reduced by the same amount, so the tiles stay where they were).
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(androidx.compose.foundation.rememberScrollState())
-            .padding(vertical = TILE_FOCUS_ROOM),
-    ) {
-        Section.entries.chunked(TILES_PER_ROW).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
-                row.forEach { s ->
-                    Tile(
-                        section = s,
-                        summary = summaries.getValue(s),
-                        warning = s == Section.AUTOSTART && autoStartBlocked,
-                        onClick = { onOpen(s) },
-                        modifier = Modifier.weight(1f).focusRequester(focus.getValue(s)),
-                    )
-                }
-                // Keep tiles of a short last row as wide as the others.
-                repeat(TILES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-        }
-    }
-}
-
-private const val TILES_PER_ROW = 3
-
-/** Same corners as the focus outline of [rs.timok.player.ui.components.TvClickable]. */
-private val tileShape = RoundedCornerShape(8.dp)
-
-@Composable
-private fun Tile(section: Section, summary: String, warning: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    // Compact: icon beside the text, so all tiles fit on one screen even at 100% display size.
-    TvClickable(onClick = onClick, modifier = modifier.height(TILE_HEIGHT), focusedScale = 1.04f) {
-        Row(
-            Modifier.fillMaxSize().background(Brand.Surface.copy(alpha = 0.6f), tileShape).padding(horizontal = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(painterResource(section.icon), contentDescription = null, tint = Brand.Accent, modifier = Modifier.size(30.dp))
-            Column(Modifier.padding(start = 16.dp)) {
-                Text(stringResource(section.title), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    if (warning) "⚠ $summary" else summary,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (warning) Brand.Accent else Brand.TextSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Section.entries.forEach { s ->
+                NavItem(
+                    section = s,
+                    selected = s == current,
+                    warning = s == Section.AUTOSTART && autoStartBlocked,
+                    modifier = Modifier
+                        .focusRequester(navFocus.getValue(s))
+                        .focusProperties { right = contentFocus }
+                        .onFocusChanged { if (it.isFocused) onFocus(s) },
+                    onClick = { runCatching { contentFocus.requestFocus() } },
                 )
             }
         }
+        // Brand and version at the bottom of the menu.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp, top = 16.dp)) {
+            Image(painterResource(R.drawable.logo), contentDescription = null, modifier = Modifier.size(40.dp))
+            Column(Modifier.padding(start = 12.dp)) {
+                Text(stringResource(R.string.brand_name), style = MaterialTheme.typography.titleSmall, color = Brand.TextPrimary)
+                Text(stringResource(R.string.settings_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
+            }
+        }
     }
 }
 
-private val TILE_HEIGHT = 76.dp
+@Composable
+private fun NavItem(section: Section, selected: Boolean, warning: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    // Focused: the usual outline. Selected while the settings on the right have focus: an accent tint.
+    val tint = selected && !focused
+    TvClickable(onClick = onClick, focusedScale = 1f, modifier = modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(if (tint) Brand.Accent.copy(alpha = 0.16f) else Color.Transparent, tileShape)
+                .padding(horizontal = 12.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(section.icon),
+                contentDescription = null,
+                tint = if (selected || focused) Brand.Accent else Brand.TextSecondary,
+                modifier = Modifier.size(22.dp),
+            )
+            Text(
+                stringResource(section.title) + if (warning) "  ⚠" else "",
+                style = MaterialTheme.typography.titleMedium,
+                color = if (tint) Brand.Accent else if (focused) Brand.TextPrimary else Brand.TextSecondary,
+                fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 14.dp).weight(1f),
+            )
+            if (tint) Text("›", fontSize = 20.sp, color = Brand.Accent)
+        }
+    }
+}
 
-/** Space the focused tile grows into (scale + outline) inside the clipping scroll area. */
-private val TILE_FOCUS_ROOM = 8.dp
+/** Scrolling column every section is laid out in. */
+@Composable
+private fun SectionColumn(content: @Composable () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().widthIn(max = 900.dp).verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(22.dp),
+    ) { content() }
+}
 
 @Composable
 private fun AccountSection(
@@ -250,98 +298,106 @@ private fun AccountSection(
     val never = stringResource(R.string.settings_never)
     fun fmt(t: Long?) = t?.let { dateFormat.format(Date(it)) } ?: never
 
-    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    SectionColumn {
         // Profiles: OK on another account switches to it; the details below belong to the active one.
-        Text(stringResource(R.string.settings_accounts), color = Brand.TextSecondary, style = MaterialTheme.typography.titleSmall)
-        accounts.forEach { a ->
-            val active = a.id == playlist?.id
-            SettingRow(
-                title = "${a.name} · ${a.username}",
-                value = stringResource(if (active) R.string.settings_account_active else R.string.settings_account_switch),
-                valueActive = active,
-                onClick = { if (!active) onSwitchAccount(a.id) },
-                modifier = Modifier.width(760.dp).then(if (active) Modifier.focusRequester(focus) else Modifier),
-            )
-        }
-        TvButton(stringResource(R.string.settings_account_add), onClick = onAddAccount)
-        Spacer(Modifier.height(12.dp))
-        playlist?.let { p ->
-            // Saved when the keyboard closes or the field is left; blank goes back to the server address.
-            var name by remember(p.id, p.name) { mutableStateOf(p.name) }
-            TvTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = stringResource(R.string.settings_account_name),
-                imeAction = ImeAction.Done,
-                onImeAction = { if (name != p.name) vm.renameAccount(name) },
-                commitOnLeave = true,
-                modifier = Modifier.width(760.dp),
-            )
-            Info(stringResource(R.string.settings_status, p.status))
-            Info(p.expiresAt?.let { stringResource(R.string.settings_expires, fmt(it)) } ?: stringResource(R.string.settings_expires_never))
-            Info(stringResource(R.string.settings_connections, p.maxConnections))
-            Info(stringResource(R.string.settings_last_refresh, fmt(p.channelsUpdatedAt)))
-            Info(stringResource(R.string.settings_epg_updated, fmt(p.epgUpdatedAt)))
-            p.epgError?.let { Text(epgErrorText(it), color = Brand.Error) }
-            // Checked against the server when the keyboard closes; a bad address puts the old one back.
-            var server by remember(p.id, p.server) { mutableStateOf(p.server) }
-            val scope = rememberCoroutineScope()
-            TvTextField(
-                value = server,
-                onValueChange = { server = it },
-                label = stringResource(R.string.settings_server),
-                keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Done,
-                onImeAction = {
-                    scope.launch { if (!vm.changeServer(server)) server = p.server }
-                },
-                commitOnLeave = true,
-                modifier = Modifier.width(760.dp).padding(top = 8.dp),
-            )
-            Text(stringResource(R.string.settings_server_hint), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
-            // Field state survives typing; it is saved when the keyboard closes.
-            var epgUrl by remember(p.id) { mutableStateOf(p.epgUrl.orEmpty()) }
-            TvTextField(
-                value = epgUrl,
-                onValueChange = { epgUrl = it },
-                label = stringResource(R.string.settings_epg_url),
-                keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Done,
-                onImeAction = { vm.setEpgUrl(epgUrl) },
-                commitOnLeave = true,
-                modifier = Modifier.width(760.dp).padding(top = 8.dp),
-            )
-            Text(stringResource(R.string.settings_epg_url_hint), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
-            val presets by vm.epgPresets.collectAsStateWithLifecycle()
-            var choosePresets by remember { mutableStateOf(false) }
-            val locale = LocalConfiguration.current.locales[0]
-            val labels = remember(locale) { EpgPresets.labels(locale) }
-            SettingRow(
-                title = stringResource(R.string.settings_epg_presets),
-                value = EpgPresets.all.filter { it.id in presets }.map { labels.getValue(it.id) }.let { names ->
-                    // A long choice would push the title out of the row.
-                    names.take(3).joinToString(", ") + if (names.size > 3) " +${names.size - 3}" else ""
-                }.ifEmpty { stringResource(R.string.settings_epg_presets_none) },
-                valueActive = presets.isNotEmpty(),
-                onClick = { choosePresets = true },
-                modifier = Modifier.width(760.dp).padding(top = 8.dp),
-            )
-            if (choosePresets) {
-                EpgPresetsDialog(
-                    selected = presets,
-                    labels = labels,
-                    onDone = { chosen ->
-                        choosePresets = false
-                        vm.setEpgPresets(chosen)
-                    },
+        SettingsGroup(stringResource(R.string.settings_accounts)) {
+            accounts.forEachIndexed { i, a ->
+                if (i > 0) GroupDivider()
+                val active = a.id == playlist?.id
+                ValueRow(
+                    title = "${a.name} · ${a.username}",
+                    value = stringResource(if (active) R.string.settings_account_active else R.string.settings_account_switch),
+                    valueActive = active,
+                    chevron = !active,
+                    onClick = { if (!active) onSwitchAccount(a.id) },
+                    modifier = if (active) Modifier.focusRequester(focus) else Modifier,
                 )
             }
-            Text(stringResource(R.string.settings_epg_presets_hint), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
+            GroupDivider()
+            ValueRow(title = stringResource(R.string.settings_account_add), value = "", onClick = onAddAccount)
         }
-        status?.let { Text(it, color = Brand.TextSecondary) }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 16.dp)) {
-            TvButton(stringResource(R.string.settings_refresh), onClick = vm::refresh)
-            TvButton(stringResource(R.string.settings_logout), onClick = { confirmRemove = true })
+        playlist?.let { p ->
+            SettingsGroup(stringResource(R.string.settings_group_active_account)) {
+                // Saved when the keyboard closes or the field is left; blank goes back to the server address.
+                var name by remember(p.id, p.name) { mutableStateOf(p.name) }
+                TvTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = stringResource(R.string.settings_account_name),
+                    imeAction = ImeAction.Done,
+                    onImeAction = { if (name != p.name) vm.renameAccount(name) },
+                    commitOnLeave = true,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+                InfoLine(stringResource(R.string.settings_status, p.status))
+                InfoLine(p.expiresAt?.let { stringResource(R.string.settings_expires, fmt(it)) } ?: stringResource(R.string.settings_expires_never))
+                InfoLine(stringResource(R.string.settings_connections, p.maxConnections))
+                InfoLine(stringResource(R.string.settings_last_refresh, fmt(p.channelsUpdatedAt)))
+                InfoLine(stringResource(R.string.settings_epg_updated, fmt(p.epgUpdatedAt)))
+                p.epgError?.let { InfoLine(epgErrorText(it), Brand.Error) }
+                Spacer(Modifier.height(6.dp))
+            }
+            SettingsGroup(stringResource(R.string.settings_group_server)) {
+                // Checked against the server when the keyboard closes; a bad address puts the old one back.
+                var server by remember(p.id, p.server) { mutableStateOf(p.server) }
+                val scope = rememberCoroutineScope()
+                TvTextField(
+                    value = server,
+                    onValueChange = { server = it },
+                    label = stringResource(R.string.settings_server),
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Done,
+                    onImeAction = { scope.launch { if (!vm.changeServer(server)) server = p.server } },
+                    commitOnLeave = true,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+                InfoLine(stringResource(R.string.settings_server_hint), Brand.TextSecondary, small = true)
+                // Field state survives typing; it is saved when the keyboard closes.
+                var epgUrl by remember(p.id) { mutableStateOf(p.epgUrl.orEmpty()) }
+                TvTextField(
+                    value = epgUrl,
+                    onValueChange = { epgUrl = it },
+                    label = stringResource(R.string.settings_epg_url),
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Done,
+                    onImeAction = { vm.setEpgUrl(epgUrl) },
+                    commitOnLeave = true,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+                InfoLine(stringResource(R.string.settings_epg_url_hint), Brand.TextSecondary, small = true)
+                GroupDivider()
+                val presets by vm.epgPresets.collectAsStateWithLifecycle()
+                var choosePresets by remember { mutableStateOf(false) }
+                val locale = LocalConfiguration.current.locales[0]
+                val labels = remember(locale) { EpgPresets.labels(locale) }
+                ValueRow(
+                    title = stringResource(R.string.settings_epg_presets),
+                    hint = stringResource(R.string.settings_epg_presets_hint),
+                    value = EpgPresets.all.filter { it.id in presets }.map { labels.getValue(it.id) }.let { names ->
+                        // A long choice would push the title out of the row.
+                        names.take(3).joinToString(", ") + if (names.size > 3) " +${names.size - 3}" else ""
+                    }.ifEmpty { stringResource(R.string.settings_epg_presets_none) },
+                    valueActive = presets.isNotEmpty(),
+                    onClick = { choosePresets = true },
+                )
+                if (choosePresets) {
+                    EpgPresetsDialog(
+                        selected = presets,
+                        labels = labels,
+                        onDone = { chosen ->
+                            choosePresets = false
+                            vm.setEpgPresets(chosen)
+                        },
+                    )
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                status?.let { Text(it, color = Brand.TextSecondary) }
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    TvButton(stringResource(R.string.settings_refresh), onClick = vm::refresh, style = ButtonStyle.Neutral)
+                    TvButton(stringResource(R.string.settings_logout), onClick = { confirmRemove = true }, style = ButtonStyle.Danger)
+                }
+            }
         }
     }
     if (confirmRemove) {
@@ -358,6 +414,17 @@ private fun AccountSection(
     }
 }
 
+/** A line of text inside a group card. */
+@Composable
+private fun InfoLine(text: String, color: Color = Brand.TextPrimary, small: Boolean = false) {
+    Text(
+        text,
+        color = color,
+        style = if (small) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.padding(horizontal = 18.dp, vertical = if (small) 2.dp else 5.dp),
+    )
+}
+
 @Composable
 private fun epgErrorText(error: String): String = when {
     error == EpgRepository.NO_MATCH -> stringResource(R.string.settings_epg_no_match)
@@ -365,18 +432,19 @@ private fun epgErrorText(error: String): String = when {
     else -> stringResource(R.string.settings_epg_failed)
 }
 
+private val categoryTabs = listOf(
+    CategoryTab.LIVE to R.string.nav_tv,
+    CategoryTab.MOVIES to R.string.nav_movies,
+    CategoryTab.SERIES to R.string.nav_series,
+)
+
 @Composable
 private fun CategoriesSection(vm: SettingsViewModel, focus: FocusRequester) {
     val tab by vm.categoryTab.collectAsStateWithLifecycle()
     val state by vm.categories.collectAsStateWithLifecycle()
-    val tabs = listOf(
-        CategoryTab.LIVE to R.string.nav_tv,
-        CategoryTab.MOVIES to R.string.nav_movies,
-        CategoryTab.SERIES to R.string.nav_series,
-    )
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            tabs.forEach { (t, label) ->
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            categoryTabs.forEach { (t, label) ->
                 Chip(
                     text = stringResource(label),
                     selected = t == tab,
@@ -384,29 +452,158 @@ private fun CategoriesSection(vm: SettingsViewModel, focus: FocusRequester) {
                     modifier = if (t == tab) Modifier.focusRequester(focus) else Modifier,
                 )
             }
-            Spacer(Modifier.width(24.dp))
-            TvButton(stringResource(R.string.settings_show_all), onClick = { vm.setAllCategoriesHidden(false) })
-            TvButton(stringResource(R.string.settings_hide_all), onClick = { vm.setAllCategoriesHidden(true) })
+            Spacer(Modifier.weight(1f))
+            TvButton(stringResource(R.string.settings_show_all), onClick = { vm.setAllCategoriesHidden(false) }, style = ButtonStyle.Neutral)
+            TvButton(stringResource(R.string.settings_hide_all), onClick = { vm.setAllCategoriesHidden(true) }, style = ButtonStyle.Neutral)
         }
-        Text(stringResource(if (tab == CategoryTab.LIVE) R.string.settings_categories_hint else R.string.settings_categories_hint_vod), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
-        when (val st = state) {
-            CategoriesState.Loading -> Text(stringResource(R.string.vod_loading), color = Brand.TextSecondary)
-            is CategoriesState.Error -> Text(st.message, color = Brand.Error)
-            is CategoriesState.Ready -> LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(vertical = 8.dp),
-            ) {
-                items(st.items, key = { it.key }) { item ->
-                    SettingRow(
-                        title = item.name,
-                        value = stringResource(if (item.hidden) R.string.category_hidden else R.string.category_shown),
-                        valueActive = !item.hidden,
-                        onClick = { vm.toggleCategory(item) },
-                    )
-                }
+        Text(
+            stringResource(if (tab == CategoryTab.LIVE) R.string.settings_categories_hint else R.string.settings_categories_hint_vod),
+            color = Brand.TextSecondary,
+            style = MaterialTheme.typography.bodySmall,
+        )
+        CategoryGrid(state) { item ->
+            SettingRow(
+                title = item.name,
+                value = stringResource(if (item.hidden) R.string.category_hidden else R.string.category_shown),
+                valueActive = !item.hidden,
+                onClick = { vm.toggleCategory(item) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryGrid(state: CategoriesState, item: @Composable (CategoryToggle) -> Unit) {
+    when (state) {
+        CategoriesState.Loading -> Text(stringResource(R.string.vod_loading), color = Brand.TextSecondary)
+        is CategoriesState.Error -> Text(state.message, color = Brand.Error)
+        is CategoriesState.Ready -> LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = PaddingValues(vertical = 4.dp),
+        ) {
+            items(state.items, key = { it.key }) { item(it) }
+        }
+    }
+}
+
+/**
+ * Shows [content] only while the parental locks are not in force; otherwise a note and a button that asks for
+ * the PIN (not asked on its own: the section shows as soon as the menu passes over it).
+ */
+@Composable
+private fun PinGate(vm: SettingsViewModel, focus: FocusRequester, hold: NavHold, content: @Composable () -> Unit) {
+    val active by vm.parentalActive.collectAsStateWithLifecycle()
+    // After the PIN the row is gone: focus moves into the section's content.
+    LaunchedEffect(active) {
+        if (!active && hold.active) {
+            withFrameNanos { }
+            runCatching { focus.requestFocus() }
+            hold.active = false
+        }
+    }
+    if (!active) {
+        content()
+        return
+    }
+    SettingsGroup(null) {
+        InfoLine(stringResource(R.string.parental_locked_section), Brand.TextSecondary)
+        ValueRow(
+            title = stringResource(R.string.pin_enter_title),
+            value = "",
+            onClick = {
+                hold.active = true
+                vm.requestUnlock(onCancel = { hold.active = false })
+            },
+            modifier = Modifier.focusRequester(focus),
+        )
+    }
+}
+
+@Composable
+private fun ParentalSection(vm: SettingsViewModel, focus: FocusRequester, hold: NavHold) {
+    val enabled by vm.parentalEnabled.collectAsStateWithLifecycle()
+    val message by vm.parentalMessage.collectAsStateWithLifecycle()
+    var choosingPin by remember { mutableStateOf(false) }
+    var confirmOff by remember { mutableStateOf(false) }
+    // The rows change when the PIN is set or removed; focus goes to the first one again.
+    var refocus by remember { mutableIntStateOf(0) }
+    LaunchedEffect(refocus) {
+        if (refocus == 0) return@LaunchedEffect
+        withFrameNanos { }
+        runCatching { focus.requestFocus() }
+        hold.active = false
+    }
+    if (choosingPin) {
+        PinSetupDialog(
+            onDone = { pin ->
+                choosingPin = false
+                hold.active = true
+                vm.setPin(pin)
+                refocus++
+            },
+            onDismiss = { choosingPin = false },
+        )
+    }
+    if (confirmOff) {
+        ConfirmDialog(
+            title = stringResource(R.string.parental_off_title),
+            message = stringResource(R.string.parental_off_message),
+            confirmLabel = stringResource(R.string.parental_turn_off),
+            onConfirm = {
+                confirmOff = false
+                hold.active = true
+                vm.turnOffParental()
+                refocus++
+            },
+            onDismiss = { confirmOff = false },
+        )
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Text(stringResource(R.string.parental_intro), color = Brand.TextSecondary, style = MaterialTheme.typography.bodyMedium)
+        SettingsGroup(stringResource(R.string.settings_group_pin)) {
+            if (!enabled) {
+                ValueRow(
+                    title = stringResource(R.string.parental_set_pin),
+                    value = stringResource(R.string.state_off),
+                    onClick = { choosingPin = true },
+                    modifier = Modifier.focusRequester(focus),
+                )
+            } else {
+                ValueRow(
+                    title = stringResource(R.string.parental_lock_adult),
+                    value = message.orEmpty(),
+                    valueActive = true,
+                    onClick = vm::lockAdultCategories,
+                    modifier = Modifier.focusRequester(focus),
+                )
+                GroupDivider()
+                ValueRow(title = stringResource(R.string.parental_change_pin), value = "", onClick = { choosingPin = true })
+                GroupDivider()
+                ValueRow(title = stringResource(R.string.parental_turn_off), value = "", danger = true, chevron = false, onClick = { confirmOff = true })
             }
+        }
+        if (enabled) LockCategoryList(vm)
+    }
+}
+
+@Composable
+private fun LockCategoryList(vm: SettingsViewModel) {
+    val tab by vm.lockTab.collectAsStateWithLifecycle()
+    val state by vm.lockCategories.collectAsStateWithLifecycle()
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(stringResource(R.string.settings_group_locked), fontSize = 13.sp, color = Brand.TextSecondary, modifier = Modifier.padding(start = 4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            categoryTabs.forEach { (t, label) -> Chip(text = stringResource(label), selected = t == tab, onClick = { vm.selectLockTab(t) }) }
+        }
+        CategoryGrid(state) { item ->
+            SettingRow(
+                title = item.name,
+                value = stringResource(if (item.hidden) R.string.category_locked else R.string.category_unlocked),
+                valueActive = item.hidden,
+                onClick = { vm.toggleLock(item) },
+            )
         }
     }
 }
@@ -449,57 +646,62 @@ private fun PlaybackSection(vm: SettingsViewModel, focus: FocusRequester) {
             onDismiss = { bufferDialog = false },
         )
     }
-    Column(Modifier.width(760.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SettingRow(
-            title = stringResource(R.string.settings_background_video),
-            hint = stringResource(R.string.settings_background_video_hint),
-            value = onOff(backgroundPlayback),
-            valueActive = backgroundPlayback,
-            onClick = vm::toggleBackgroundPlayback,
-            modifier = Modifier.focusRequester(focus),
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_limit_video),
-            hint = stringResource(R.string.settings_limit_video_hint),
-            value = onOff(limitVideo),
-            valueActive = limitVideo,
-            onClick = vm::toggleLimitVideo,
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_decoder),
-            hint = stringResource(R.string.settings_decoder_hint),
-            value = decoderLabels.getValue(decoderMode) + "  ▾",
-            valueActive = decoderMode != rs.timok.player.player.DecoderMode.HARDWARE,
-            onClick = { decoderDialog = true },
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_buffer),
-            hint = stringResource(R.string.settings_buffer_hint),
-            value = bufferLabels.getValue(bufferMode) + "  ▾",
-            valueActive = bufferMode != rs.timok.player.player.BufferMode.AUTO,
-            onClick = { bufferDialog = true },
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_texture_video),
-            hint = stringResource(R.string.settings_texture_video_hint),
-            value = onOff(textureVideo),
-            valueActive = textureVideo,
-            onClick = vm::toggleTextureVideo,
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_standby_awake),
-            hint = stringResource(R.string.settings_standby_awake_hint),
-            value = onOff(standbyAwake),
-            valueActive = standbyAwake,
-            onClick = vm::toggleStandbyAwake,
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_secure_dns),
-            hint = stringResource(R.string.settings_secure_dns_hint),
-            value = onOff(secureDns),
-            valueActive = secureDns,
-            onClick = vm::toggleSecureDns,
-        )
+    SectionColumn {
+        SettingsGroup(stringResource(R.string.settings_group_video)) {
+            SwitchRow(
+                title = stringResource(R.string.settings_background_video),
+                hint = stringResource(R.string.settings_background_video_hint),
+                checked = backgroundPlayback,
+                onClick = vm::toggleBackgroundPlayback,
+                modifier = Modifier.focusRequester(focus),
+            )
+            GroupDivider()
+            SwitchRow(
+                title = stringResource(R.string.settings_limit_video),
+                hint = stringResource(R.string.settings_limit_video_hint),
+                checked = limitVideo,
+                onClick = vm::toggleLimitVideo,
+            )
+            GroupDivider()
+            ValueRow(
+                title = stringResource(R.string.settings_decoder),
+                hint = stringResource(R.string.settings_decoder_hint),
+                value = decoderLabels.getValue(decoderMode),
+                valueActive = decoderMode != rs.timok.player.player.DecoderMode.HARDWARE,
+                onClick = { decoderDialog = true },
+            )
+            GroupDivider()
+            SwitchRow(
+                title = stringResource(R.string.settings_texture_video),
+                hint = stringResource(R.string.settings_texture_video_hint),
+                checked = textureVideo,
+                onClick = vm::toggleTextureVideo,
+            )
+        }
+        SettingsGroup(stringResource(R.string.settings_group_network)) {
+            ValueRow(
+                title = stringResource(R.string.settings_buffer),
+                hint = stringResource(R.string.settings_buffer_hint),
+                value = bufferLabels.getValue(bufferMode),
+                valueActive = bufferMode != rs.timok.player.player.BufferMode.AUTO,
+                onClick = { bufferDialog = true },
+            )
+            GroupDivider()
+            SwitchRow(
+                title = stringResource(R.string.settings_secure_dns),
+                hint = stringResource(R.string.settings_secure_dns_hint),
+                checked = secureDns,
+                onClick = vm::toggleSecureDns,
+            )
+        }
+        SettingsGroup(stringResource(R.string.settings_group_device)) {
+            SwitchRow(
+                title = stringResource(R.string.settings_standby_awake),
+                hint = stringResource(R.string.settings_standby_awake_hint),
+                checked = standbyAwake,
+                onClick = vm::toggleStandbyAwake,
+            )
+        }
     }
 }
 
@@ -517,127 +719,106 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
     val screenMargin by vm.screenMargin.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     var languageDialog by remember { mutableStateOf(false) }
-    Column(Modifier.width(560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.settings_display_size), style = MaterialTheme.typography.titleMedium, color = Brand.TextPrimary)
-        Text(stringResource(R.string.settings_display_size_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
-            AppPrefs.uiScales.forEach { scale ->
-                val selected = scale == uiScale
-                Chip(
-                    text = percent(scale),
-                    selected = selected,
-                    onClick = { vm.setUiScale(scale) },
-                    modifier = if (selected) Modifier.focusRequester(focus) else Modifier,
-                )
-            }
+    SectionColumn {
+        SettingsGroup(stringResource(R.string.settings_group_display)) {
+            ValueRow(
+                title = stringResource(R.string.settings_language),
+                value = languageLabel(language),
+                valueActive = true,
+                onClick = { languageDialog = true },
+                modifier = Modifier.focusRequester(focus),
+            )
+            GroupDivider()
+            ChipsRow(
+                title = stringResource(R.string.settings_display_size),
+                hint = stringResource(R.string.settings_display_size_hint),
+                options = AppPrefs.uiScales,
+                selected = uiScale,
+                label = { percent(it) },
+                onPick = vm::setUiScale,
+            )
+            GroupDivider()
+            ChipsRow(
+                title = stringResource(R.string.settings_screen_margin),
+                hint = stringResource(R.string.settings_screen_margin_hint),
+                options = AppPrefs.screenMargins,
+                selected = screenMargin,
+                label = { "$it%" },
+                onPick = vm::setScreenMargin,
+            )
         }
-        Text(
-            stringResource(R.string.settings_screen_margin),
-            style = MaterialTheme.typography.titleMedium,
-            color = Brand.TextPrimary,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-        Text(stringResource(R.string.settings_screen_margin_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
-            AppPrefs.screenMargins.forEach { pct ->
-                Chip(text = "$pct%", selected = pct == screenMargin, onClick = { vm.setScreenMargin(pct) })
-            }
-        }
-        SettingRow(
-            title = stringResource(R.string.settings_animations),
-            hint = stringResource(R.string.settings_animations_hint),
-            value = onOff(animations),
-            valueActive = animations,
-            onClick = vm::toggleAnimations,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            stringResource(R.string.settings_accent),
-            style = MaterialTheme.typography.titleMedium,
-            color = Brand.TextPrimary,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
-            AppPrefs.accents.forEach { name ->
-                Chip(
-                    text = "● " + stringResource(
+        SettingsGroup(stringResource(R.string.settings_group_look)) {
+            ChipsRow(
+                title = stringResource(R.string.settings_accent),
+                options = AppPrefs.accents,
+                selected = accent,
+                label = { name ->
+                    "● " + stringResource(
                         when (name) {
                             "blue" -> R.string.accent_blue
                             "green" -> R.string.accent_green
                             "purple" -> R.string.accent_purple
                             else -> R.string.accent_orange
                         }
-                    ),
-                    selected = name == accent,
-                    onClick = { vm.setAccent(name) },
-                )
-            }
+                    )
+                },
+                onPick = vm::setAccent,
+            )
+            GroupDivider()
+            SwitchRow(
+                title = stringResource(R.string.settings_animations),
+                hint = stringResource(R.string.settings_animations_hint),
+                checked = animations,
+                onClick = vm::toggleAnimations,
+            )
         }
-        SettingRow(
-            title = stringResource(R.string.settings_compact_list),
-            hint = stringResource(R.string.settings_compact_list_hint),
-            value = onOff(compactList),
-            valueActive = compactList,
-            onClick = vm::toggleCompactList,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_stream_badges),
-            hint = stringResource(R.string.settings_stream_badges_hint),
-            value = onOff(streamBadges),
-            valueActive = streamBadges,
-            onClick = vm::toggleStreamBadges,
-        )
-        SettingRow(
-            title = stringResource(R.string.settings_clock_overlay),
-            hint = stringResource(R.string.settings_clock_overlay_hint),
-            value = onOff(clockOverlay),
-            valueActive = clockOverlay,
-            onClick = vm::toggleClockOverlay,
-        )
-        Text(
-            stringResource(R.string.settings_panel_timeout),
-            style = MaterialTheme.typography.titleMedium,
-            color = Brand.TextPrimary,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-        Text(stringResource(R.string.settings_panel_timeout_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
-            AppPrefs.panelTimeouts.forEach { seconds ->
-                Chip(
-                    text = stringResource(R.string.settings_seconds, seconds),
-                    selected = seconds == panelTimeout,
-                    onClick = { vm.setPanelTimeout(seconds) },
-                )
-            }
-        }
-        Text(
-            stringResource(R.string.settings_list_fullscreen),
-            style = MaterialTheme.typography.titleMedium,
-            color = Brand.TextPrimary,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-        Text(stringResource(R.string.settings_list_fullscreen_hint), style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 6.dp)) {
-            AppPrefs.listFullscreenDelays.forEach { seconds ->
-                Chip(
-                    text = when {
+        SettingsGroup(stringResource(R.string.settings_group_list)) {
+            SwitchRow(
+                title = stringResource(R.string.settings_compact_list),
+                hint = stringResource(R.string.settings_compact_list_hint),
+                checked = compactList,
+                onClick = vm::toggleCompactList,
+            )
+            GroupDivider()
+            ChipsRow(
+                title = stringResource(R.string.settings_list_fullscreen),
+                hint = stringResource(R.string.settings_list_fullscreen_hint),
+                options = AppPrefs.listFullscreenDelays,
+                selected = listFullscreen,
+                label = { seconds ->
+                    when {
                         seconds == 0 -> stringResource(R.string.settings_never_option)
                         seconds >= 60 -> stringResource(R.string.settings_minutes, seconds / 60)
                         else -> stringResource(R.string.settings_seconds, seconds)
-                    },
-                    selected = seconds == listFullscreen,
-                    onClick = { vm.setListFullscreen(seconds) },
-                )
-            }
+                    }
+                },
+                onPick = vm::setListFullscreen,
+            )
         }
-        SettingRow(
-            title = stringResource(R.string.settings_language),
-            value = languageLabel(language) + "  ▾",
-            valueActive = true,
-            onClick = { languageDialog = true },
-            modifier = Modifier.padding(top = 8.dp),
-        )
+        SettingsGroup(stringResource(R.string.settings_group_watching)) {
+            SwitchRow(
+                title = stringResource(R.string.settings_stream_badges),
+                hint = stringResource(R.string.settings_stream_badges_hint),
+                checked = streamBadges,
+                onClick = vm::toggleStreamBadges,
+            )
+            GroupDivider()
+            SwitchRow(
+                title = stringResource(R.string.settings_clock_overlay),
+                hint = stringResource(R.string.settings_clock_overlay_hint),
+                checked = clockOverlay,
+                onClick = vm::toggleClockOverlay,
+            )
+            GroupDivider()
+            ChipsRow(
+                title = stringResource(R.string.settings_panel_timeout),
+                hint = stringResource(R.string.settings_panel_timeout_hint),
+                options = AppPrefs.panelTimeouts,
+                selected = panelTimeout,
+                label = { stringResource(R.string.settings_seconds, it) },
+                onPick = vm::setPanelTimeout,
+            )
+        }
     }
     if (languageDialog) {
         LanguageDialog(
@@ -654,6 +835,42 @@ private fun InterfaceSection(vm: SettingsViewModel, focus: FocusRequester) {
         )
     }
 }
+
+@Composable
+private fun AutoStartSection(vm: SettingsViewModel, focus: FocusRequester) {
+    val autoStart by vm.autoStart.collectAsStateWithLifecycle()
+    val blocked by vm.autoStartBlocked.collectAsStateWithLifecycle()
+    val noGrantScreen by vm.noGrantScreen.collectAsStateWithLifecycle()
+    SectionColumn {
+        SettingsGroup(null) {
+            SwitchRow(
+                title = stringResource(R.string.settings_autostart),
+                hint = stringResource(R.string.settings_autostart_hint),
+                checked = autoStart,
+                onClick = vm::toggleAutoStart,
+                modifier = Modifier.focusRequester(focus),
+            )
+            if (blocked) {
+                GroupDivider()
+                ValueRow(
+                    title = stringResource(R.string.settings_autostart_grant),
+                    hint = stringResource(R.string.settings_autostart_permission),
+                    value = "⚠",
+                    valueActive = true,
+                    onClick = vm::requestAutoStartGrant,
+                )
+            }
+        }
+        if (blocked) {
+            Text(stringResource(R.string.settings_autostart_permission), color = Brand.Accent, style = MaterialTheme.typography.bodyMedium)
+            if (noGrantScreen) {
+                Text(stringResource(R.string.settings_autostart_no_screen), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+private fun percent(scale: Float) = "${(scale * 100).roundToInt()}%"
 
 /** Drop-down list of UI languages; opens on the current one, OK picks, Back closes. */
 @Composable
@@ -743,31 +960,6 @@ private fun <T> ChoiceDialog(title: String, options: List<Pair<T, String>>, curr
     LaunchedEffect(Unit) { runCatching { currentFocus.requestFocus() } }
 }
 
-@Composable
-private fun AutoStartSection(vm: SettingsViewModel, focus: FocusRequester) {
-    val autoStart by vm.autoStart.collectAsStateWithLifecycle()
-    val blocked by vm.autoStartBlocked.collectAsStateWithLifecycle()
-    val noGrantScreen by vm.noGrantScreen.collectAsStateWithLifecycle()
-    Column(Modifier.width(760.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SettingRow(
-            title = stringResource(R.string.settings_autostart),
-            hint = stringResource(R.string.settings_autostart_hint),
-            value = onOff(autoStart),
-            valueActive = autoStart,
-            onClick = vm::toggleAutoStart,
-            modifier = Modifier.focusRequester(focus),
-        )
-        if (blocked) {
-            Text(stringResource(R.string.settings_autostart_permission), color = Brand.Accent, style = MaterialTheme.typography.bodyMedium)
-            TvButton(stringResource(R.string.settings_autostart_grant), onClick = vm::requestAutoStartGrant)
-            if (noGrantScreen) {
-                Text(stringResource(R.string.settings_autostart_no_screen), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-/** Full-width focusable row: title (and optional hint) on the left, current value on the right. */
 /** Checklist of the built-in guides; the choice is applied (and the guide reloaded) when the dialog closes. */
 @Composable
 private fun EpgPresetsDialog(selected: Set<String>, labels: Map<String, String>, onDone: (Set<String>) -> Unit) {
@@ -807,43 +999,33 @@ private fun EpgPresetsDialog(selected: Set<String>, labels: Map<String, String>,
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
 }
 
+/** New PIN typed twice; a mismatch starts over. */
 @Composable
-internal fun SettingRow(
-    title: String,
-    value: String,
-    valueActive: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    hint: String? = null,
-    valueSize: TextUnit = TextUnit.Unspecified,
-) {
-    TvClickable(onClick = onClick, modifier = modifier.fillMaxWidth()) {
-        Row(
-            Modifier.background(Brand.Surface.copy(alpha = 0.6f), tileShape).padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (hint != null) {
-                    Text(hint, style = MaterialTheme.typography.bodySmall, color = Brand.TextSecondary)
+private fun PinSetupDialog(onDone: (String) -> Unit, onDismiss: () -> Unit) {
+    var first by remember { mutableStateOf<String?>(null) }
+    val mismatch = stringResource(R.string.pin_mismatch)
+    rs.timok.player.ui.components.PinDialog(
+        title = stringResource(if (first == null) R.string.pin_new_title else R.string.pin_repeat_title),
+        message = stringResource(R.string.pin_set_message),
+        onPin = { pin ->
+            when {
+                first == null -> {
+                    first = pin
+                    null
+                }
+                pin == first -> {
+                    onDone(pin)
+                    null
+                }
+                else -> {
+                    first = null
+                    mismatch
                 }
             }
-            Box(Modifier.padding(start = 16.dp)) {
-                Text(
-                    value,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = valueSize,
-                    color = if (valueActive) Brand.Accent else Brand.TextSecondary,
-                )
-            }
-        }
-    }
+        },
+        onDismiss = onDismiss,
+    )
 }
-
-private fun percent(scale: Float) = "${(scale * 100).roundToInt()}%"
-
-@Composable
-private fun onOff(on: Boolean) = stringResource(if (on) R.string.state_on else R.string.state_off)
 
 @Composable
 private fun languageLabel(tag: String): String =
@@ -858,7 +1040,3 @@ private fun languageLabel(tag: String): String =
         stringResource(R.string.settings_language_system, name)
     } else LocaleHelper.displayName(tag)
 
-@Composable
-private fun Info(text: String) {
-    Text(text, color = Brand.TextPrimary, style = MaterialTheme.typography.bodyLarge)
-}

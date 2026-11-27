@@ -39,8 +39,13 @@ data class UpdateInfo(
     val apkUrl: String,
     /** SHA-256 of the APK (hex); a download that does not match is never installed. */
     val sha256: String,
+    /** Serbian changelog; the only one versions before 0.5.7 read. */
     val changelog: String = "",
-)
+    /** Changelog per app language ("en", "de", "sk"...); [changelog] when the language is missing. */
+    val changelogs: Map<String, String> = emptyMap(),
+) {
+    fun changelogFor(language: String): String = changelogs[language]?.takeIf { it.isNotBlank() } ?: changelog
+}
 
 sealed interface UpdateState {
     data object Idle : UpdateState

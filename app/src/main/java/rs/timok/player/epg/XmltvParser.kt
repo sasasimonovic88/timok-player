@@ -30,6 +30,8 @@ class XmltvParser {
      * @param offsetMs added to every parsed time (per-playlist EPG shift).
      * @param keyCountries country of the channel behind each key ([EpgKeys.countryOf]); a name match is only made
      *   with a guide channel from a compatible country, so a Croatian channel never gets a Romanian guide.
+     * @param ownCountries countries with a checked built-in guide; a name match of their channels with a neighbour's
+     *   guide (same language group, other country) is reported in [weakKeys], so a later own-country guide can replace it.
      * @param guideCountry country of the whole guide (a built-in per-country guide), or null to read it from each
      *   guide channel id.
      */
@@ -40,6 +42,9 @@ class XmltvParser {
         skipKeys: Set<String> = emptySet(),
         keyCountries: Map<String, String> = emptyMap(),
         guideCountry: String? = null,
+        ownCountries: Set<String> = emptySet(),
+        /** Filled with the keys this guide matched only as a neighbour (see [ownCountries]). */
+        weakKeys: MutableSet<String> = HashSet(),
         offsetMs: Long,
         windowStart: Long,
         windowEnd: Long,
@@ -63,7 +68,7 @@ class XmltvParser {
                 if (id != null && id in wantedKeys) directIds += id
                 else if (id != null && names.isNotEmpty()) guideNames[id] = names
             } else if (event == XmlPullParser.START_TAG && parser.name == "programme") {
-                val map = aliases ?: resolveAliases(guideNames, directIds + skipKeys, nameKeys, keyCountries, guideCountry).also { aliases = it }
+                val map = aliases ?: resolveAliases(guideNames, directIds + skipKeys, nameKeys, keyCountries, guideCountry, ownCountries, weakKeys).also { aliases = it }
                 val raw = parser.getAttributeValue(null, "channel")?.trim()?.lowercase()
                 val keys = when {
                     raw == null -> emptyList()
@@ -97,6 +102,8 @@ class XmltvParser {
         nameKeys: Map<String, List<String>>,
         keyCountries: Map<String, String>,
         guideCountry: String?,
+        ownCountries: Set<String>,
+        weakKeys: MutableSet<String>,
     ): Map<String, List<String>> {
         if (nameKeys.isEmpty()) return emptyMap()
         val taken = HashSet<String>(directIds)
@@ -105,15 +112,27 @@ class XmltvParser {
         // ("Discovery Channel" in the guide, "Discovery" in the panel), so "RTL Channel" never beats "RTL".
         for (loose in listOf(false, true)) {
             for ((id, names) in guideNames) {
-                if (id in result) continue
+                // Matched by exact name already: the loose pass may still add channels of the guide's own country
+                // ("STAR Channel" in a Croatian guide: exact for "MK| STAR CHANNEL", loose for "HR| STAR").
+                val matched = result[id]
+                if (matched != null && !loose) continue
                 val candidates = names.firstNotNullOfOrNull { name ->
                     val normalized = EpgKeys.normalizeName(name)
                     if (loose) normalized.replace(CHANNEL_WORD, "").takeIf { it != normalized }?.let { nameKeys[it] }
                     else nameKeys[normalized]
                 } ?: continue
                 val country = guideCountry ?: EpgKeys.countryOfGuideId(id)
-                val keys = candidates.filter { EpgKeys.compatible(keyCountries[it], country) && taken.add(it) }
-                if (keys.isNotEmpty()) result[id] = keys
+                val keys = candidates.filter { key ->
+                    val channelCountry = keyCountries[key]
+                    if (matched != null && (country == null || channelCountry != country)) return@filter false
+                    val neighbour = channelCountry != null && country != null && channelCountry != country
+                    (EpgKeys.compatible(channelCountry, country) && taken.add(key)).also { ok ->
+                        // A neighbour's guide ("RS| STAR HD" for "HR| STAR") is only a stand-in while the channel's own
+                        // country has a built-in guide checked: same-name channels often run different schedules there.
+                        if (ok && neighbour && channelCountry in ownCountries) weakKeys += key
+                    }
+                }
+                if (keys.isNotEmpty()) result[id] = matched.orEmpty() + keys
             }
         }
         return result

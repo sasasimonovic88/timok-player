@@ -43,6 +43,7 @@ class ChannelsViewModel @Inject constructor(
     private val channels: ChannelRepository,
     private val settings: SettingsStore,
     private val playback: PlaybackController,
+    private val parental: rs.timok.player.data.parental.ParentalControl,
 ) : ViewModel() {
 
     val playlist: StateFlow<PlaylistEntity?> =
@@ -56,6 +57,14 @@ class ChannelsViewModel @Inject constructor(
     val categories: StateFlow<List<CategoryEntity>> = playlistId
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else channels.categories(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Categories behind the PIN while it has not been entered; their channels are left out of every group. */
+    val lockedCategories: StateFlow<Set<String>> = playlistId
+        .flatMapLatest { id -> if (id == null) flowOf(emptySet()) else parental.activeLockedKeys(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    /** OK on a locked category: the PIN unlocks it (and every other locked one until the app is left). */
+    fun unlock() = parental.requestUnlock {}
 
     /** Null until the first query returns, so the UI can tell "loading" from "empty". */
     val rows: StateFlow<List<ChannelRow>?> = combine(playlistId, _group.filterNotNull()) { id, g -> id to g }
@@ -87,7 +96,7 @@ class ChannelsViewModel @Inject constructor(
             _group.value = g
             // Resume the last channel behind the list, like a TV that remembers where it was.
             if (lastStream != null && playback.currentStreamId.value == null && settings.backgroundPlayback.first()) {
-                playback.play(lastStream, if (g == GroupKey.Recent) recentPlayGroup(lastStream) else g)
+                playback.play(lastStream, if (g == GroupKey.Recent) recentPlayGroup(lastStream) else g, askPin = false)
             }
         }
     }

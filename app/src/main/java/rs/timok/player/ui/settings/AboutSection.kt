@@ -148,7 +148,7 @@ private fun AboutButton(text: String, onClick: () -> Unit, modifier: Modifier = 
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier
                 .width(BUTTON_WIDTH)
-                .background(if (focused) Brand.Accent else Brand.Primary, RoundedCornerShape(10.dp))
+                .background(if (focused) Brand.Accent else Brand.SurfaceFocused, RoundedCornerShape(10.dp))
                 .padding(horizontal = 16.dp, vertical = 14.dp),
         )
     }

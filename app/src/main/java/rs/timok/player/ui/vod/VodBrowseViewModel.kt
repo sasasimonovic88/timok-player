@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import rs.timok.player.data.db.WatchProgressEntity
@@ -41,6 +42,8 @@ sealed interface ItemsState {
     data object Loading : ItemsState
     data class Error(val message: String) : ItemsState
     data class Ready(val entries: List<GridEntry>) : ItemsState
+    /** The category is behind the parental PIN. */
+    data object Locked : ItemsState
 }
 
 const val CONTINUE_KEY = "__continue"
@@ -55,6 +58,7 @@ class VodBrowseViewModel @Inject constructor(
     playlists: PlaylistRepository,
     private val channels: ChannelRepository,
     private val settings: SettingsStore,
+    private val parental: rs.timok.player.data.parental.ParentalControl,
 ) : ViewModel() {
 
     val kind: VodKind = VodKind.valueOf(savedState.get<String>("kind") ?: VodKind.MOVIE.name)
@@ -69,6 +73,30 @@ class VodBrowseViewModel @Inject constructor(
         all?.filter { ChannelRepository.vodKey(kind, it.id) !in h }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Category ids of this kind behind the PIN while it has not been entered. */
+    val lockedCategories: StateFlow<Set<String>> = playlists.activePlaylist.map { it?.id }.distinctUntilChanged()
+        .flatMapLatest { id -> if (id == null) flowOf(emptySet()) else parental.activeLockedKeys(id) }
+        .map { keys -> keys.mapNotNullTo(HashSet()) { k -> k.removePrefix("${kind.name}:").takeIf { it != k } } }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /**
+     * Titles of locked categories, kept out of "continue watching" and "My List" (they store no category, so the
+     * server's full list tells). Null when that list could not be loaded: then both rows stay empty while locked.
+     */
+    private val lockedItemIds = lockedCategories.mapLatest { locked ->
+        if (locked.isEmpty()) emptySet()
+        else runCatching { vod.allItems(kind) }.getOrNull()
+            ?.filter { it.categoryId != null && it.categoryId in locked }
+            ?.mapTo(HashSet()) { it.id }
+    }
+
+    private fun List<GridEntry>.withoutLocked(locked: Set<Long>?) =
+        if (locked == null) emptyList() else filter { it.item.id !in locked }
+
+    /** OK on a locked category: the PIN unlocks it (and every other locked one until the app is left). */
+    fun unlock() = parental.requestUnlock {}
+
     private val _categoriesError = MutableStateFlow<String?>(null)
     val categoriesError: StateFlow<String?> = _categoriesError
 
@@ -81,6 +109,7 @@ class VodBrowseViewModel @Inject constructor(
         .map { it?.id }
         .flatMapLatest { vod.continueWatching(kind, it) }
         .map { rows -> rows.map(::toEntry) }
+        .combine(lockedItemIds) { entries, locked -> entries.withoutLocked(locked) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** "My List": titles saved to watch later, newest first. */
@@ -88,6 +117,7 @@ class VodBrowseViewModel @Inject constructor(
         .map { it?.id }
         .flatMapLatest { vod.watchlist(kind, it) }
         .map { rows -> rows.map(::toEntry) }
+        .combine(lockedItemIds) { entries, locked -> entries.withoutLocked(locked) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val sort: StateFlow<VodSort> = settings.vodSort.stateIn(viewModelScope, SharingStarted.Eagerly, VodSort.DEFAULT)
@@ -97,8 +127,11 @@ class VodBrowseViewModel @Inject constructor(
         viewModelScope.launch { settings.setVodSort(order) }
     }
 
-    val items: StateFlow<ItemsState> = combine(_selected, networkItems, continueEntries, myListEntries, sort) { sel, net, cont, mine, order ->
+    private val shown = combine(networkItems, lockedCategories) { net, locked -> net to locked }
+
+    val items: StateFlow<ItemsState> = combine(_selected, shown, continueEntries, myListEntries, sort) { sel, (net, locked), cont, mine, order ->
         when {
+            sel != null && sel in locked -> ItemsState.Locked
             sel == CONTINUE_KEY -> ItemsState.Ready(cont)
             sel == MY_LIST_KEY -> ItemsState.Ready(mine)
             net is ItemsState.Ready -> ItemsState.Ready(sorted(net.entries, order))

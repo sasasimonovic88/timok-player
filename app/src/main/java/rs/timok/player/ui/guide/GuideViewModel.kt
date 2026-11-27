@@ -41,6 +41,7 @@ class GuideViewModel @Inject constructor(
     private val playlists: PlaylistRepository,
     private val channels: ChannelRepository,
     private val reminderManager: rs.timok.player.data.reminder.ReminderManager,
+    private val parental: rs.timok.player.data.parental.ParentalControl,
 ) : ViewModel() {
 
     /** Keys ("streamId@startMs") of programmes with a reminder, to mark them in the grid. */
@@ -64,9 +65,14 @@ class GuideViewModel @Inject constructor(
 
     private val playlistId = playlists.activePlaylist.map { it?.id }
 
-    /** Favorites, all channels and the visible server categories, in the channel list's order. */
+    /** Favorites, all channels and the visible server categories, in the channel list's order (locked ones left out). */
     val groups: StateFlow<List<GuideGroup>> = playlistId
-        .flatMapLatest { pid -> if (pid == null) flowOf(emptyList()) else channels.categories(pid) }
+        .flatMapLatest { pid ->
+            if (pid == null) flowOf(emptyList())
+            else combine(channels.categories(pid), parental.activeLockedKeys(pid)) { cats, locked ->
+                cats.filter { it.categoryId !in locked }
+            }
+        }
         .map { cats ->
             listOf(
                 GuideGroup(GroupKey.Favorites, context.getString(R.string.group_favorites)),

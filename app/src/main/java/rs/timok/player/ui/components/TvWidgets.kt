@@ -154,7 +154,13 @@ private fun Int.isSelectKey() =
  * given programmatically while a screen opened (the button had focus, but looked unfocused).
  */
 @Composable
-fun TvButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun TvButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    style: ButtonStyle = ButtonStyle.Primary,
+) {
     var focused by remember { mutableStateOf(false) }
     val animate = rs.timok.player.ui.theme.LocalAnimations.current
     val scale by animateFloatAsState(
@@ -175,8 +181,10 @@ fun TvButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, e
             .background(
                 when {
                     !enabled -> Brand.Surface
+                    focused && style == ButtonStyle.Danger -> Brand.Error
                     focused -> Brand.Accent
-                    else -> Brand.Primary
+                    style == ButtonStyle.Primary -> Brand.Primary
+                    else -> Brand.SurfaceFocused
                 },
                 shape,
             )
@@ -188,10 +196,17 @@ fun TvButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, e
         Text(
             text,
             style = MaterialTheme.typography.titleMedium,
-            color = if (focused && enabled) Color.Black else Color.White,
+            color = when {
+                focused && enabled -> Color.Black
+                style == ButtonStyle.Danger -> Brand.Error
+                else -> Color.White
+            },
         )
     }
 }
+
+/** Primary: the screen's main action (blue at rest). Neutral: everything else. Danger: removes or turns off. */
+enum class ButtonStyle { Primary, Neutral, Danger }
 
 /**
  * Text input that is safe for D-pad: moving focus over it does not pop the keyboard.

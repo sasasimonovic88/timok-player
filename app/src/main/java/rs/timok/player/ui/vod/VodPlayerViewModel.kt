@@ -34,6 +34,9 @@ class VodPlayerViewModel @Inject constructor(
 
     private val player get() = playback.livePlayer.player
 
+    /** The PIN asked for when coming back from the background was not entered: the movie was stopped. */
+    val pinCancelled = playback.pinCancelled
+
     private val _request = MutableStateFlow(Json.decodeFromString<VodPlayRequest>(savedState.get<String>("req")!!))
     val request: StateFlow<VodPlayRequest> = _request
 

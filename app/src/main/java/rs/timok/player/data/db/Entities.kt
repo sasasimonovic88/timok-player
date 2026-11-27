@@ -60,6 +60,13 @@ data class HiddenCategoryEntity(
     val categoryId: String,
 )
 
+/** Categories behind the parental PIN (live ids and VOD keys, like [HiddenCategoryEntity]); kept across refreshes. */
+@Entity(tableName = "locked_categories", primaryKeys = ["playlistId", "categoryId"])
+data class LockedCategoryEntity(
+    val playlistId: Long,
+    val categoryId: String,
+)
+
 @Entity(tableName = "favorites", primaryKeys = ["playlistId", "streamId"])
 data class FavoriteEntity(
     val playlistId: Long,

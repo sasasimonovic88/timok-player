@@ -82,7 +82,7 @@ import rs.timok.player.ui.components.NavRail
 import rs.timok.player.ui.components.TvClickable
 import rs.timok.player.ui.theme.Brand
 
-private data class GroupItem(val key: GroupKey, val title: String)
+private data class GroupItem(val key: GroupKey, val title: String, val locked: Boolean = false)
 
 /** One translucent color, not a gradient: cheaper to fill on weak TV GPUs, and the panel edge fades out anyway. */
 private val scrim = Brand.Background.copy(alpha = 0.88f)
@@ -114,6 +114,7 @@ fun ChannelsScreen(
     val playlist by vm.playlist.collectAsStateWithLifecycle()
     val group by vm.group.collectAsStateWithLifecycle()
     val categories by vm.categories.collectAsStateWithLifecycle()
+    val lockedCategories by vm.lockedCategories.collectAsStateWithLifecycle()
     val rows by vm.rows.collectAsStateWithLifecycle()
     val move by vm.move.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
@@ -159,15 +160,16 @@ fun ChannelsScreen(
     val favoritesTitle = stringResource(R.string.group_favorites)
     val allTitle = stringResource(R.string.group_all)
     val recentTitle = stringResource(R.string.group_recent)
-    val groupItems = remember(categories, favoritesTitle, allTitle, recentTitle) {
+    val groupItems = remember(categories, lockedCategories, favoritesTitle, allTitle, recentTitle) {
         buildList {
             add(GroupItem(GroupKey.Favorites, favoritesTitle))
             add(GroupItem(GroupKey.Recent, recentTitle))
             add(GroupItem(GroupKey.All, allTitle))
-            categories.forEach { add(GroupItem(GroupKey.Category(it.categoryId), it.name)) }
+            categories.forEach { add(GroupItem(GroupKey.Category(it.categoryId), it.name, it.categoryId in lockedCategories)) }
         }
     }
     val groupTitle = groupItems.firstOrNull { it.key == group }?.title.orEmpty()
+    val groupLocked = groupItems.firstOrNull { it.key == group }?.locked == true
     val list = move?.items ?: rows
 
     // Nothing to restore in an empty group: start on the group column instead.
@@ -207,6 +209,7 @@ fun ChannelsScreen(
                     selectedRequester = groupFocus,
                     focusEnabled = move == null,
                     onFocusGroup = vm::selectGroup,
+                    onUnlock = vm::unlock,
                 )
             }
             Spacer(Modifier.width(16.dp))
@@ -224,6 +227,7 @@ fun ChannelsScreen(
                     )
                     when {
                         refreshing -> Text(stringResource(R.string.refreshing), color = Brand.TextSecondary)
+                        groupLocked -> Unit
                         rows != null && move == null ->
                             Text(pluralStringResource(R.plurals.channel_count, rows!!.size, rows!!.size), color = Brand.TextSecondary)
                     }
@@ -240,6 +244,11 @@ fun ChannelsScreen(
                         modifier = Modifier.padding(top = 24.dp),
                     )
                     playlist == null -> Unit
+                    groupLocked -> Text(
+                        stringResource(R.string.category_locked_hint),
+                        color = Brand.TextSecondary,
+                        modifier = Modifier.padding(top = 24.dp),
+                    )
                     list.isEmpty() -> Text(
                         stringResource(
                             when (group) {
@@ -293,6 +302,7 @@ private fun GroupList(
     selectedRequester: FocusRequester,
     focusEnabled: Boolean,
     onFocusGroup: (GroupKey) -> Unit,
+    onUnlock: () -> Unit,
 ) {
     val listState = rememberLazyListState()
     // The selected group must be composed (on screen) so Left from the channel list can focus it.
@@ -313,9 +323,9 @@ private fun GroupList(
                 .fillMaxWidth()
                 .onFocusChanged { if (it.isFocused && focusEnabled) onFocusGroup(item.key) }
             if (isSelected) mod = mod.focusRequester(selectedRequester)
-            TvClickable(onClick = { onFocusGroup(item.key) }, modifier = mod) {
+            TvClickable(onClick = { if (item.locked) onUnlock() else onFocusGroup(item.key) }, modifier = mod) {
                 Text(
-                    item.title,
+                    if (item.locked) "\uD83D\uDD12 ${item.title}" else item.title,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     fontSize = 16.sp,
                     color = if (isSelected) Brand.Accent else Brand.TextPrimary,

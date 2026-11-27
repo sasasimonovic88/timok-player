@@ -170,6 +170,7 @@ class PlaylistRepository @Inject constructor(
             channelDao.deleteChannels(id)
             channelDao.deleteCategories(id)
             channelDao.deleteHidden(id)
+            channelDao.deleteLocked(id)
             playlistDao.delete(id)
         }
         settings.clearAccount(id)

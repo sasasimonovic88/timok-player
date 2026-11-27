@@ -79,6 +79,21 @@ interface ChannelDao {
     @Query("DELETE FROM hidden_categories WHERE playlistId = :playlistId")
     suspend fun deleteHidden(playlistId: Long)
 
+    @Query("SELECT categoryId FROM locked_categories WHERE playlistId = :playlistId")
+    fun observeLocked(playlistId: Long): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun lockAll(items: List<LockedCategoryEntity>)
+
+    @Query("DELETE FROM locked_categories WHERE playlistId = :playlistId AND categoryId IN (:categoryIds)")
+    suspend fun unlockAll(playlistId: Long, categoryIds: List<String>)
+
+    @Query("DELETE FROM locked_categories WHERE playlistId = :playlistId")
+    suspend fun deleteLocked(playlistId: Long)
+
+    @Query("SELECT categoryId FROM channels WHERE playlistId = :playlistId AND streamId = :streamId LIMIT 1")
+    suspend fun categoryOf(playlistId: Long, streamId: Long): String?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategories(items: List<CategoryEntity>)
 
@@ -175,6 +190,9 @@ interface ProgramDao {
 
     @Query("DELETE FROM programs WHERE playlistId = :playlistId")
     suspend fun deleteForPlaylist(playlistId: Long)
+
+    @Query("DELETE FROM programs WHERE playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun deleteForChannel(playlistId: Long, channelKey: String)
 
     @Query("UPDATE programs SET playlistId = :to WHERE playlistId = :from")
     suspend fun movePlaylist(from: Long, to: Long)

@@ -365,6 +365,9 @@ fun AppNavHost(mainViewModel: MainViewModel, playback: PlaybackController) {
             )
         }
         rs.timok.player.ui.update.UpdateDialog(mainViewModel.updates)
+        // Last, so it sits above everything else: the PIN for locked categories, asked for by any screen.
+        val pinRequest by mainViewModel.parental.request.collectAsStateWithLifecycle()
+        if (pinRequest != null) rs.timok.player.ui.components.ParentalPinPrompt(mainViewModel.parental)
         val dueReminder by mainViewModel.reminders.due.collectAsStateWithLifecycle()
         dueReminder?.let { r ->
             ReminderPopup(

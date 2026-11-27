@@ -64,6 +64,7 @@ class SearchViewModel @Inject constructor(
     private val vod: VodRepository,
     private val settings: SettingsStore,
     private val playback: PlaybackController,
+    private val parental: rs.timok.player.data.parental.ParentalControl,
 ) : ViewModel() {
 
     private val normalized = ConcurrentHashMap<String, String>()
@@ -82,9 +83,12 @@ class SearchViewModel @Inject constructor(
 
     private val vodState = MutableStateFlow<VodState>(VodState.Idle)
 
-    /** Movie and series category keys hidden in settings; their items stay out of the results too. */
+    /** Movie and series category keys hidden in settings or locked; their items stay out of the results too. */
     private val hidden = playlists.activePlaylist.map { it?.id }.distinctUntilChanged()
-        .flatMapLatest { id -> if (id == null) flowOf(emptySet()) else channels.hiddenKeys(id) }
+        .flatMapLatest { id ->
+            if (id == null) flowOf(emptySet())
+            else combine(channels.hiddenKeys(id), parental.activeLockedKeys(id)) { h, locked -> h + locked }
+        }
 
     /** Null while the query is empty (nothing searched yet). */
     val results: StateFlow<SearchResults?> =
@@ -104,7 +108,7 @@ class SearchViewModel @Inject constructor(
             val series = vod.allItems(VodKind.SERIES)
             // Adult categories can still be opened under Movies, but never pop up in search results.
             val adult = VodKind.entries.associateWith { kind ->
-                vod.categories(kind).filter { ADULT.containsMatchIn(it.name) }.map { it.id }.toSet()
+                vod.categories(kind).filter { rs.timok.player.data.parental.ParentalControl.ADULT.containsMatchIn(it.name) }.map { it.id }.toSet()
             }
             withContext(Dispatchers.Default) {
                 fun prepare(items: List<VodItem>, kind: VodKind) = items
@@ -190,7 +194,6 @@ class SearchViewModel @Inject constructor(
     private companion object {
         /** Enough to find a title; a short query would otherwise list thousands of posters. */
         const val MAX_VOD_RESULTS = 60
-        val ADULT = Regex("(?i)xxx|adult|18\\s*\\+|porn|erotic|odrasl")
         private val MARKS = Regex("\\p{Mn}+")
 
         /** Name starting with the query first, then a word starting with it, then a match inside a word. */

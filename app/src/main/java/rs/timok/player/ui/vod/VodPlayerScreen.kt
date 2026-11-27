@@ -82,6 +82,7 @@ private fun seekStep(repeatCount: Int) = when {
 
 @Composable
 fun VodPlayerScreen(onExit: () -> Unit, vm: VodPlayerViewModel = hiltViewModel()) {
+    LaunchedEffect(Unit) { vm.pinCancelled.collect { onExit() } }
     val request by vm.request.collectAsStateWithLifecycle()
     val status by vm.status.collectAsStateWithLifecycle()
     val position by vm.positionMs.collectAsStateWithLifecycle()

@@ -63,6 +63,7 @@ class SettingsViewModel @Inject constructor(
     private val playback: PlaybackController,
     private val okHttp: OkHttpClient,
     private val dns: SecureDns,
+    private val parental: rs.timok.player.data.parental.ParentalControl,
 ) : ViewModel() {
 
     val playlist: StateFlow<PlaylistEntity?> =
@@ -102,7 +103,72 @@ class SettingsViewModel @Inject constructor(
         list.map { (c, hidden) -> CategoryToggle(c.categoryId, c.name, hidden) }
     }
 
-    private fun vodToggles(id: Long, kind: VodKind): Flow<CategoriesState> = flow {
+    private fun vodToggles(id: Long, kind: VodKind): Flow<CategoriesState> = vodToggles(kind, channels.hiddenKeys(id))
+
+    // Parental control: the same category lists, where the flag means "locked".
+
+    val parentalEnabled: StateFlow<Boolean> = parental.enabled
+    val parentalActive: StateFlow<Boolean> = parental.active
+
+    val lockedCount: StateFlow<Int> = playlistId
+        .flatMapLatest { id -> if (id == null) flowOf(emptySet()) else parental.lockedKeys(id) }
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    private val _lockTab = MutableStateFlow(CategoryTab.LIVE)
+    val lockTab: StateFlow<CategoryTab> = _lockTab
+
+    fun selectLockTab(tab: CategoryTab) {
+        _lockTab.value = tab
+    }
+
+    val lockCategories: StateFlow<CategoriesState> = combine(playlistId, _lockTab) { id, tab -> id to tab }
+        .flatMapLatest { (id, tab) ->
+            when {
+                id == null -> flowOf(CategoriesState.Ready(emptyList()))
+                tab == CategoryTab.LIVE -> combine(channels.allCategories(id), parental.lockedKeys(id)) { all, locked ->
+                    CategoriesState.Ready(all.map { (c, _) -> CategoryToggle(c.categoryId, c.name, c.categoryId in locked) })
+                }
+                else -> vodToggles(if (tab == CategoryTab.MOVIES) VodKind.MOVIE else VodKind.SERIES, parental.lockedKeys(id))
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CategoriesState.Loading)
+
+    /** [CategoryToggle.hidden] is the locked flag here. */
+    fun toggleLock(item: CategoryToggle) {
+        val pid = playlist.value?.id ?: return
+        viewModelScope.launch { parental.setLocked(pid, listOf(item.key), !item.hidden) }
+    }
+
+    private val _parentalMessage = MutableStateFlow<String?>(null)
+    val parentalMessage: StateFlow<String?> = _parentalMessage
+
+    /** Locks every live, movie and series category whose name marks adult content. */
+    fun lockAdultCategories() {
+        val pid = playlist.value?.id ?: return
+        viewModelScope.launch {
+            val adult = rs.timok.player.data.parental.ParentalControl.ADULT
+            val keys = channels.allCategories(pid).first().map { it.first }
+                .filter { adult.containsMatchIn(it.name) }.map { it.categoryId }.toMutableList()
+            for (kind in VodKind.entries) {
+                // VOD lists come from the server; one that fails is skipped, the others are still locked.
+                runCatching { vod.categories(kind) }.getOrNull()
+                    ?.filter { adult.containsMatchIn(it.name) }
+                    ?.forEach { keys += ChannelRepository.vodKey(kind, it.id) }
+            }
+            parental.setLocked(pid, keys, true)
+            _parentalMessage.value = if (keys.isEmpty()) context.getString(R.string.parental_lock_adult_none)
+            else context.getString(R.string.parental_lock_adult_done, keys.size)
+        }
+    }
+
+    fun setPin(pin: String) = parental.setPin(pin)
+
+    fun turnOffParental() = parental.clearPin()
+
+    fun requestUnlock(onCancel: () -> Unit) = parental.requestUnlock(onCancel) {}
+
+    private fun vodToggles(kind: VodKind, marked: Flow<Set<String>>): Flow<CategoriesState> = flow {
         emit(CategoriesState.Loading)
         val cats = try {
             vod.categories(kind)
@@ -110,7 +176,7 @@ class SettingsViewModel @Inject constructor(
             emit(CategoriesState.Error(e.userMessage(context)))
             return@flow
         }
-        emitAll(channels.hiddenKeys(id).map { hidden ->
+        emitAll(marked.map { hidden ->
             CategoriesState.Ready(cats.map {
                 val key = ChannelRepository.vodKey(kind, it.id)
                 CategoryToggle(key, it.name, key in hidden)

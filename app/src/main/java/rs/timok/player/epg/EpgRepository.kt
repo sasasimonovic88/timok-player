@@ -33,6 +33,7 @@ class EpgRepository @Inject constructor(
             .ifEmpty { listOfNotNull(sources.create(playlist).epgUrl()) }
         // Checked built-in guides fill the channels those leave without a guide (or all of them, when the panel has none).
         val fallback = EpgPresets.all.filter { it.id in AppPrefs.epgPresets.value }
+        val ownCountries = fallback.mapNotNull { it.country }.toSet()
         if (urls.isEmpty() && fallback.isEmpty()) return@withContext 0
         val wanted = channelDao.epgChannelIds(playlistId).toHashSet()
         // Every channel can also be matched by name, under the same key the channel list looks up.
@@ -62,11 +63,16 @@ class EpgRepository @Inject constructor(
         // The guide can take minutes to download on slow panels.
         val client = okHttp.newBuilder().readTimeout(3, TimeUnit.MINUTES).build()
         var count = 0
-        // Channels filled by an earlier link are not taken again from a later one.
+        // Channels filled by an earlier link are not taken again from a later one...
         val filled = HashSet<String>()
+        // ...except those filled only from a neighbour country's guide: an own-country guide later replaces them.
+        val weakFilled = HashSet<String>()
         var lastError: Exception? = null
         suspend fun importLink(url: String, country: String?, index: Int, total: Int) {
             val keys = HashSet<String>()
+            val weak = HashSet<String>()
+            // Weak keys this link fills properly: their stand-in rows go before the new ones are added.
+            val replaced = HashSet<String>()
             try {
                 client.newCall(Request.Builder().url(url).build()).execute().use { response ->
                     if (!response.isSuccessful) throw IOException("EPG HTTP ${response.code}")
@@ -75,13 +81,25 @@ class EpgRepository @Inject constructor(
                         input = response.body!!.byteStream(),
                         wantedKeys = wanted,
                         nameKeys = nameKeys,
-                        skipKeys = filled,
+                        skipKeys = filled - weakFilled,
                         keyCountries = keyCountries,
                         guideCountry = country,
+                        ownCountries = ownCountries,
+                        weakKeys = weak,
                         offsetMs = playlist.epgOffsetHours * 3_600_000L,
                         windowStart = windowStart,
                         windowEnd = windowEnd,
                     ) { p ->
+                        if (p.channelKey in weakFilled) {
+                            // Another stand-in never replaces the first one.
+                            if (p.channelKey in weak) return@parse
+                            if (replaced.add(p.channelKey)) {
+                                programDao.insert(batch)
+                                count += batch.size
+                                batch.clear()
+                                programDao.deleteForChannel(tempId, p.channelKey)
+                            }
+                        }
                         keys += p.channelKey
                         batch += ProgramEntity(
                             playlistId = tempId,
@@ -103,6 +121,8 @@ class EpgRepository @Inject constructor(
                     }
                 }
                 filled += keys
+                weakFilled -= replaced
+                weakFilled += keys.filter { it in weak && it !in filled - keys }
             } catch (e: CancellationException) {
                 // Replaced by a newer download: stop, and do not report it as a broken link.
                 programDao.deleteForPlaylist(tempId)

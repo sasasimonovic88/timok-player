@@ -1,6 +1,10 @@
 package rs.timok.player.ui.player
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -76,11 +80,8 @@ internal fun OptionsPanel(
     val subtitles = tracks.filter { it.type == C.TRACK_TYPE_TEXT }
     val aspectLabel = stringResource(aspect.label)
 
-    LazyColumn(
+    Column(
         modifier
-            // Focus must not wander out of an open panel: the screen behind ignores keys meanwhile.
-            .focusGroup()
-            .focusProperties { onExit = { if (visible) cancelFocusChange() } }
             .fillMaxHeight()
             .width(420.dp)
             .padding(vertical = 28.dp, horizontal = 28.dp)
@@ -89,6 +90,13 @@ internal fun OptionsPanel(
             .background(glassHighlight)
             .border(1.dp, Color.White.copy(alpha = 0.14f), panelShape)
             .padding(vertical = 16.dp, horizontal = 12.dp),
+    ) {
+    LazyColumn(
+        Modifier
+            // Focus must not wander out of an open panel: the screen behind ignores keys meanwhile.
+            .focusGroup()
+            .focusProperties { onExit = { if (visible) cancelFocusChange() } }
+            .weight(1f),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         item {
@@ -113,12 +121,16 @@ internal fun OptionsPanel(
                 )
             }
         }
-        // A single audio track has nothing to choose from.
-        if (audio.size > 1) {
+        if (audio.isNotEmpty()) {
             item { SectionTitle(stringResource(R.string.options_audio)) }
-            audio.forEachIndexed { i, t ->
-                item(key = "a${t.groupIndex}_${t.trackIndex}") {
-                    OptionItem(trackLabel(t, i), checked = t.selected, onClick = { onSelectTrack(t) })
+            if (audio.size == 1) {
+                // Nothing to choose, but shown so it is clear the stream has only this one.
+                item(key = "a_only") { InfoItem(stringResource(R.string.options_audio_only, trackLabel(audio[0], 0))) }
+            } else {
+                audio.forEachIndexed { i, t ->
+                    item(key = "a${t.groupIndex}_${t.trackIndex}") {
+                        OptionItem(trackLabel(t, i), checked = t.selected, onClick = { onSelectTrack(t) })
+                    }
                 }
             }
         }
@@ -158,6 +170,30 @@ internal fun OptionsPanel(
         }
         item { OptionItem(stringResource(R.string.options_reload), leading = "↻", onClick = onReload) }
         onExternal?.let { open -> item { OptionItem(stringResource(R.string.external_player_open), leading = "⇱", onClick = open) } }
+    }
+        // Brand mark in the free space at the bottom; below the list, so it never covers an item.
+        Row(
+            Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp).alpha(0.35f),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(painterResource(R.drawable.logo), contentDescription = null, modifier = Modifier.size(30.dp))
+            Text(
+                stringResource(R.string.brand_name),
+                fontSize = 16.sp,
+                color = Color.White,
+                modifier = Modifier.padding(start = 10.dp),
+            )
+        }
+    }
+}
+
+/** Not selectable: a line of information in the list. */
+@Composable
+private fun InfoItem(text: String) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 11.dp)) {
+        Text("", modifier = Modifier.width(28.dp))
+        Text(text, fontSize = 17.sp, color = Brand.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

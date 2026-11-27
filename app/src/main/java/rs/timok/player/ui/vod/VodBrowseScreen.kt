@@ -68,6 +68,7 @@ fun VodBrowseScreen(
     val items by vm.items.collectAsStateWithLifecycle()
     val continueEntries by vm.continueEntries.collectAsStateWithLifecycle()
     val myListEntries by vm.myListEntries.collectAsStateWithLifecycle()
+    val lockedCategories by vm.lockedCategories.collectAsStateWithLifecycle()
     val categoryFocus = remember { FocusRequester() }
     var restoreFocus by remember { mutableStateOf(true) }
 
@@ -124,7 +125,7 @@ fun VodBrowseScreen(
             when {
                 categoriesError != null -> Text(categoriesError!!, color = Brand.Error, modifier = Modifier.padding(14.dp))
                 categories == null -> Text(stringResource(R.string.vod_loading), color = Brand.TextSecondary, modifier = Modifier.padding(14.dp))
-                else -> CategoryList(categoryRows, selected, categoryFocus, onFocus = vm::select)
+                else -> CategoryList(categoryRows, selected, categoryFocus, lockedCategories, onFocus = vm::select, onUnlock = vm::unlock)
             }
         }
         Spacer(Modifier.width(16.dp))
@@ -155,6 +156,7 @@ fun VodBrowseScreen(
             when (val s = items) {
                 ItemsState.Loading -> Text(stringResource(R.string.vod_loading), color = Brand.TextSecondary, modifier = Modifier.padding(top = 24.dp))
                 is ItemsState.Error -> Text(s.message, color = Brand.Error, modifier = Modifier.padding(top = 24.dp))
+                ItemsState.Locked -> Text(stringResource(R.string.category_locked_hint), color = Brand.TextSecondary, modifier = Modifier.padding(top = 24.dp))
                 is ItemsState.Ready ->
                     if (s.entries.isEmpty()) {
                         Text(stringResource(R.string.vod_empty), color = Brand.TextSecondary, modifier = Modifier.padding(top = 24.dp))
@@ -182,7 +184,9 @@ private fun CategoryList(
     rows: List<Pair<String, String>>,
     selected: String?,
     selectedRequester: FocusRequester,
+    locked: Set<String>,
     onFocus: (String) -> Unit,
+    onUnlock: () -> Unit,
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(selected, rows.size) {
@@ -194,9 +198,10 @@ private fun CategoryList(
             val isSelected = id == selected
             var mod = Modifier.fillMaxWidth().onFocusChanged { if (it.isFocused) onFocus(id) }
             if (isSelected) mod = mod.focusRequester(selectedRequester)
-            TvClickable(onClick = { onFocus(id) }, modifier = mod) {
+            val isLocked = id in locked
+            TvClickable(onClick = { if (isLocked) onUnlock() else onFocus(id) }, modifier = mod) {
                 Text(
-                    name,
+                    if (isLocked) "\uD83D\uDD12 $name" else name,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     fontSize = 16.sp,
                     color = if (isSelected) Brand.Accent else Brand.TextPrimary,

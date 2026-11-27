@@ -8,6 +8,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -32,6 +34,7 @@ class PlaybackController @Inject constructor(
     @Named("userAgent") val userAgent: String,
     private val playlists: PlaylistRepository,
     private val settings: SettingsStore,
+    private val parental: rs.timok.player.data.parental.ParentalControl,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -78,9 +81,18 @@ class PlaybackController @Inject constructor(
     private var vodActive = false
     private var liveBeforeVod: Pair<Long, GroupKey>? = null
 
+    // Movies are only reached through unlocked categories; one started after the PIN was entered asks for it again
+    // when the app comes back from the background (the TV may have been switched off and on by someone else).
+    private var vodNeedsPin = false
+
+    private val _pinCancelled = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** The PIN prompt for a locked channel or movie was dismissed, so nothing plays: the player screens close. */
+    val pinCancelled: SharedFlow<Unit> = _pinCancelled
+
     /** Plays a movie or episode from [startMs], closing the live stream first. */
     fun playVod(url: String, startMs: Long) {
         playJob?.cancel()
+        vodNeedsPin = parental.enabled.value && !parental.active.value
         if (!vodActive) liveBeforeVod = _currentStreamId.value?.let { it to group }
         vodActive = true
         playingId = null
@@ -96,7 +108,7 @@ class PlaybackController @Inject constructor(
         val previous = liveBeforeVod
         liveBeforeVod = null
         scope.launch {
-            if (previous != null && settings.backgroundPlayback.first()) play(previous.first, previous.second)
+            if (previous != null && settings.backgroundPlayback.first()) play(previous.first, previous.second, askPin = false)
         }
     }
 
@@ -119,7 +131,7 @@ class PlaybackController @Inject constructor(
         val previous = pausedForBrowse ?: return
         pausedForBrowse = null
         scope.launch {
-            if (settings.backgroundPlayback.first() && _currentStreamId.value == null) play(previous.first, previous.second)
+            if (settings.backgroundPlayback.first() && _currentStreamId.value == null) play(previous.first, previous.second, askPin = false)
         }
     }
 
@@ -132,8 +144,36 @@ class PlaybackController @Inject constructor(
         private set
     private var lastOpened: Pair<Long, GroupKey>? = null
 
-    /** Starts [streamId]; with [immediate] false, waits briefly so fast zapping opens only the last channel. */
-    fun play(streamId: Long, group: GroupKey, immediate: Boolean = true) {
+    /**
+     * Starts [streamId]; with [immediate] false, waits briefly so fast zapping opens only the last channel.
+     * A channel of a locked category asks for the PIN first, or with [askPin] false (automatic resumes) is skipped.
+     */
+    fun play(streamId: Long, group: GroupKey, immediate: Boolean = true, askPin: Boolean = true) {
+        if (!parental.active.value) {
+            playUnlocked(streamId, group, immediate)
+            return
+        }
+        scope.launch {
+            val pid = playlists.activePlaylistNow()?.id ?: return@launch
+            if (!parental.isChannelLocked(pid, streamId)) {
+                playUnlocked(streamId, group, immediate)
+                return@launch
+            }
+            // The channel kept from before the app went to the background must not look like it is playing.
+            if (!askPin) {
+                if (_currentStreamId.value == streamId) stop()
+                return@launch
+            }
+            parental.requestUnlock(
+                onCancel = {
+                    if (_currentStreamId.value == streamId) stop()
+                    _pinCancelled.tryEmit(Unit)
+                },
+            ) { playUnlocked(streamId, group, immediate) }
+        }
+    }
+
+    private fun playUnlocked(streamId: Long, group: GroupKey, immediate: Boolean) {
         // An explicit channel replaces the one paused behind the movie screens.
         pausedForBrowse = null
         _currentStreamId.value = streamId
@@ -213,9 +253,19 @@ class PlaybackController @Inject constructor(
         if (!pausedInBackground) return
         pausedInBackground = false
         if (vodActive) {
-            livePlayer.resume()
+            if (vodNeedsPin && parental.active.value) {
+                parental.requestUnlock(
+                    onCancel = {
+                        stopAll()
+                        _pinCancelled.tryEmit(Unit)
+                    },
+                ) { livePlayer.resume() }
+            } else {
+                livePlayer.resume()
+            }
             return
         }
+        // A locked channel asks for the PIN again (the app locked itself in the background).
         _currentStreamId.value?.let { play(it, group) }
     }
 

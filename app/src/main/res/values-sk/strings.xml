@@ -211,6 +211,8 @@
     <string name="backup_error_io">Súbor sa nepodarilo prečítať ani uložiť.</string>
     <string name="backup_no_picker">Toto zariadenie nemá výber súborov.</string>
 
+    <!-- Which changelog of update.json to show (changelogs.<code>). -->
+    <string name="update_changelog_language">sk</string>
     <string name="update_available">Nová verzia %1$s</string>
     <string name="update_current">Nainštalované: %1$s</string>
     <string name="update_install">Inštalovať</string>
@@ -307,4 +309,41 @@
     <string name="settings_buffer_auto">Automaticky</string>
     <string name="settings_buffer_short">Krátka (rýchly štart)</string>
     <string name="settings_buffer_long">Dlhá (pomalý internet)</string>
+    <string name="options_audio_only">%1$s (jediná)</string>
+    <!-- Parental control -->
+    <string name="settings_parental">Rodičovská kontrola</string>
+    <string name="settings_parental_summary_on">Zapnuté · zamknuté: %1$d</string>
+    <string name="pin_enter_title">Zadaj PIN</string>
+    <string name="pin_enter_message">Tento obsah je zamknutý rodičovskou kontrolou.</string>
+    <string name="pin_wrong">Nesprávny PIN</string>
+    <string name="pin_wait">Príliš veľa pokusov. Počkaj %1$d s.</string>
+    <string name="pin_new_title">Zvoľ 4-miestny PIN</string>
+    <string name="pin_repeat_title">Zopakuj PIN</string>
+    <string name="pin_mismatch">PIN-y sa nezhodujú. Skús znova.</string>
+    <string name="pin_set_message">Zapamätaj si ho: zabudnutý PIN sa dá odstrániť iba vymazaním údajov aplikácie.</string>
+    <string name="parental_intro">Zamkni kategórie (živé vysielanie, filmy, seriály) PIN-om. Ich kanály zmiznú zo všetkých zoznamov, obľúbených aj vyhľadávania, kým sa nezadá PIN. Odomknuté zostane, kým sa aplikácia neopustí alebo sa TV nevypne.</string>
+    <string name="parental_set_pin">Nastaviť PIN</string>
+    <string name="parental_change_pin">Zmeniť PIN</string>
+    <string name="parental_lock_adult">Zamknúť kategórie pre dospelých</string>
+    <string name="parental_lock_adult_done">Zamknuté kategórie pre dospelých: %1$d</string>
+    <string name="parental_lock_adult_none">Nenašli sa žiadne kategórie pre dospelých</string>
+    <string name="parental_turn_off">Vypnúť</string>
+    <string name="parental_off_title">Vypnúť rodičovskú kontrolu?</string>
+    <string name="parental_off_message">PIN sa vymaže a všetky kategórie sa dajú pozerať. Zamknuté kategórie sa zapamätajú pre nový PIN.</string>
+    <string name="parental_locked_section">Zadaj PIN, aby si mohol zmeniť tieto nastavenia.</string>
+    <string name="category_locked">🔒 Zamknutá</string>
+    <string name="category_unlocked">Odomknutá</string>
+    <string name="category_locked_hint">Táto kategória je zamknutá. Stlač na nej OK a zadaj PIN.</string>
+    <!-- Settings groups -->
+    <string name="settings_group_video">Video</string>
+    <string name="settings_group_network">Sieť</string>
+    <string name="settings_group_device">Zariadenie</string>
+    <string name="settings_group_display">Jazyk a zobrazenie</string>
+    <string name="settings_group_look">Farby a animácie</string>
+    <string name="settings_group_list">Zoznam kanálov</string>
+    <string name="settings_group_watching">Počas pozerania</string>
+    <string name="settings_group_active_account">Aktívny účet</string>
+    <string name="settings_group_server">Server a TV program</string>
+    <string name="settings_group_pin">PIN</string>
+    <string name="settings_group_locked">Zamknuté kategórie</string>
 </resources>

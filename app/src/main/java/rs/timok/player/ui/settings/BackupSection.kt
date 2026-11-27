@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,35 +54,36 @@ internal fun BackupSection(focus: FocusRequester, vm: BackupViewModel = hiltView
         }
     }
 
-    Column(Modifier.width(760.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SettingRow(
-            title = stringResource(R.string.backup_save),
-            hint = stringResource(R.string.backup_save_hint),
-            value = "⤓",
-            valueActive = true,
-            onClick = {
-                try {
-                    saveLauncher.launch(vm.suggestedName())
-                } catch (e: ActivityNotFoundException) {
-                    android.widget.Toast.makeText(context, noPicker, android.widget.Toast.LENGTH_LONG).show()
-                }
-            },
-            modifier = Modifier.focusRequester(focus),
-        )
-        SettingRow(
-            title = stringResource(R.string.backup_restore),
-            hint = stringResource(R.string.backup_restore_hint),
-            value = "⤒",
-            valueActive = true,
-            onClick = {
-                try {
-                    // Some pickers do not know the JSON type of files on USB sticks; offer everything.
-                    openLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*"))
-                } catch (e: ActivityNotFoundException) {
-                    android.widget.Toast.makeText(context, noPicker, android.widget.Toast.LENGTH_LONG).show()
-                }
-            },
-        )
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SettingsGroup(null) {
+            ValueRow(
+                title = stringResource(R.string.backup_save),
+                hint = stringResource(R.string.backup_save_hint),
+                value = "",
+                onClick = {
+                    try {
+                        saveLauncher.launch(vm.suggestedName())
+                    } catch (e: ActivityNotFoundException) {
+                        android.widget.Toast.makeText(context, noPicker, android.widget.Toast.LENGTH_LONG).show()
+                    }
+                },
+                modifier = Modifier.focusRequester(focus),
+            )
+            GroupDivider()
+            ValueRow(
+                title = stringResource(R.string.backup_restore),
+                hint = stringResource(R.string.backup_restore_hint),
+                value = "",
+                onClick = {
+                    try {
+                        // Some pickers do not know the JSON type of files on USB sticks; offer everything.
+                        openLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*"))
+                    } catch (e: ActivityNotFoundException) {
+                        android.widget.Toast.makeText(context, noPicker, android.widget.Toast.LENGTH_LONG).show()
+                    }
+                },
+            )
+        }
         message?.let { Text(it, color = Brand.TextPrimary, style = MaterialTheme.typography.bodyLarge) }
         Text(stringResource(R.string.backup_note), color = Brand.TextSecondary, style = MaterialTheme.typography.bodySmall)
     }

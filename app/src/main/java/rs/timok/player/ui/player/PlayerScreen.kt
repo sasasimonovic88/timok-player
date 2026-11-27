@@ -98,6 +98,7 @@ fun PlayerScreen(
     onGuide: (group: String, streamId: Long) -> Unit,
     vm: PlayerViewModel = hiltViewModel(),
 ) {
+    LaunchedEffect(Unit) { vm.pinCancelled.collect { if (vm.nothingPlaying) onExit() } }
     val appContext = LocalContext.current
     val externalAvailable = remember { ExternalPlayer.available(appContext) }
     val channels by vm.channels.collectAsStateWithLifecycle()

@@ -81,6 +81,7 @@ class ChannelRepository @Inject constructor(
     private val programDao: ProgramDao,
     private val playlistDao: PlaylistDao,
     private val settings: rs.timok.player.data.settings.SettingsStore,
+    private val parental: rs.timok.player.data.parental.ParentalControl,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val indexes = ConcurrentHashMap<Long, Flow<ChannelIndex>>()
@@ -149,7 +150,9 @@ class ChannelRepository @Inject constructor(
         val channels = channelDao.observeChannels(playlistId)
             .map { list -> list.map { it to EpgKeys.key(it.epgChannelId, it.name) } }
             .flowOn(Dispatchers.Default)
-        combine(channels, favoriteDao.observe(playlistId), hidden, epg, ::buildIndex)
+        // Locked categories (while the PIN has not been entered) disappear everywhere, favorites included.
+        val locked = parental.activeLockedKeys(playlistId)
+        combine(channels, favoriteDao.observe(playlistId), hidden, locked, epg, ::buildIndex)
             .flowOn(Dispatchers.Default)
             .shareIn(scope, SharingStarted.WhileSubscribed(60_000), replay = 1)
     }
@@ -199,6 +202,7 @@ class ChannelRepository @Inject constructor(
         channels: List<Pair<ChannelEntity, String>>,
         favorites: List<FavoriteEntity>,
         hidden: Set<String>,
+        locked: Set<String>,
         epg: EpgSnapshot,
     ): ChannelIndex {
         val favoriteIds = favorites.mapTo(HashSet(favorites.size)) { it.streamId }
@@ -208,6 +212,7 @@ class ChannelRepository @Inject constructor(
         // channels arrive in server order, which is the order inside each category.
         // epgKey: server guide id, or the name key an external guide was matched by.
         for ((c, epgKey) in channels) {
+            if (c.categoryId != null && c.categoryId in locked) continue
             val now = epg.now[epgKey]
             val row = ChannelRow(
                 streamId = c.streamId,

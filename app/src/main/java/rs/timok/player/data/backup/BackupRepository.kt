@@ -13,6 +13,7 @@ import rs.timok.player.BuildConfig
 import rs.timok.player.data.db.AppDatabase
 import rs.timok.player.data.db.FavoriteEntity
 import rs.timok.player.data.db.HiddenCategoryEntity
+import rs.timok.player.data.db.LockedCategoryEntity
 import rs.timok.player.data.db.WatchProgressEntity
 import rs.timok.player.data.db.WatchlistEntity
 import rs.timok.player.data.repo.PlaylistRepository
@@ -36,6 +37,8 @@ data class BackupFile(
     /** In the manual order; the name lets a restore find the channel when stream ids differ (other server). */
     val favorites: List<BackupChannel> = emptyList(),
     val hiddenCategories: List<String> = emptyList(),
+    /** Categories behind the parental PIN (not the PIN itself); null in backups made before 0.5.7: kept as they are. */
+    val lockedCategories: List<String>? = null,
     val watchlist: List<BackupWatchlist> = emptyList(),
     val progress: List<BackupProgress> = emptyList(),
     val settings: BackupSettings = BackupSettings(),
@@ -138,6 +141,7 @@ class BackupRepository @Inject constructor(
             exportedAt = System.currentTimeMillis(),
             favorites = favorites,
             hiddenCategories = db.channelDao().observeHidden(p.id).first(),
+            lockedCategories = db.channelDao().observeLocked(p.id).first(),
             watchlist = db.watchlistDao().all(p.id).map {
                 BackupWatchlist(it.kind, it.itemId, it.title, it.poster, it.rating, it.year, it.extension, it.addedAt)
             },
@@ -206,6 +210,10 @@ class BackupRepository @Inject constructor(
             db.favoriteDao().upsert(matched.mapIndexed { i, id -> FavoriteEntity(p.id, id, i) })
             db.channelDao().deleteHidden(p.id)
             db.channelDao().hideAll(file.hiddenCategories.map { HiddenCategoryEntity(p.id, it) })
+            file.lockedCategories?.let { locked ->
+                db.channelDao().deleteLocked(p.id)
+                db.channelDao().lockAll(locked.map { LockedCategoryEntity(p.id, it) })
+            }
             db.watchlistDao().insertAll(file.watchlist.map {
                 WatchlistEntity(p.id, it.kind, it.itemId, it.title, it.poster, it.rating, it.year, it.extension, it.addedAt)
             })

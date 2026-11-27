@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var playback: PlaybackController
     @Inject lateinit var sleepTimer: SleepTimer
+    @Inject lateinit var parental: rs.timok.player.data.parental.ParentalControl
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
@@ -87,6 +88,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         playback.onAppBackground()
+        // Whoever turns the TV on next must enter the PIN again for locked categories.
+        parental.cancelRequest()
+        parental.relock()
         super.onStop()
     }
 }
